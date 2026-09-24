@@ -1,0 +1,2241 @@
+<!DOCTYPE html>
+<html lang="it">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
+<title>HairEvolution — BarberApp</title>
+
+<!-- Rende l'app "installabile" come scorciatoia sulla schermata Home,
+     aprendosi a schermo intero senza la barra del browser -->
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="HairEvolution by BarberApp">
+<meta name="application-name" content="HairEvolution by BarberApp">
+<meta name="theme-color" content="#1c1c1c">
+<link rel="apple-touch-icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Crect width='100' height='100' fill='%231c1c1c'/%3E%3Ctext x='50' y='62' font-size='46' font-family='Georgia,serif' fill='%23d4af6a' text-anchor='middle'%3EH%3C/text%3E%3C/svg%3E">
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Crect width='100' height='100' fill='%231c1c1c'/%3E%3Ctext x='50' y='62' font-size='46' font-family='Georgia,serif' fill='%23d4af6a' text-anchor='middle'%3EH%3C/text%3E%3C/svg%3E">
+
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:ital,opsz,wght@0,9..144,400;0,9..144,600;0,9..144,700;1,9..144,500&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --charcoal:#1c1c1c;
+    --charcoal-2:#2a2926;
+    --cream:#f6f1e7;
+    --cream-2:#efe8d8;
+    --gold:#b8912f;
+    --gold-light:#d4af6a;
+    --oxblood:#7a2e2e;
+    --oxblood-light:#f5e6e1;
+    --sage:#4f7358;
+    --sage-light:#e6ede4;
+    --grey:#4a4a4a;
+    --grey-light:#8a8578;
+    --line:#e3ddcd;
+    --white:#fffdf9;
+  }
+  *{box-sizing:border-box;}
+  html,body{margin:0;padding:0;}
+  body{
+    background:var(--charcoal);
+    font-family:'Inter',sans-serif;
+    color:var(--charcoal);
+    min-height:100vh;
+    display:flex;
+    justify-content:center;
+    padding:0;
+  }
+  #app{
+    width:100%;
+    max-width:460px;
+    min-height:100vh;
+    background:var(--cream);
+    position:relative;
+    box-shadow:0 0 60px rgba(0,0,0,0.4);
+    display:flex;
+    flex-direction:column;
+  }
+  /* ---------- Header ---------- */
+  header{
+    background:var(--charcoal);
+    color:var(--cream);
+    padding:22px 20px 0 20px;
+    position:relative;
+  }
+  .brand{
+    text-align:center;
+    padding-bottom:14px;
+  }
+  .brand h1{
+    font-family:'Fraunces',serif;
+    font-weight:700;
+    font-size:28px;
+    margin:0;
+    letter-spacing:0.2px;
+    display:inline-block;
+  }
+  .beta-badge{
+    display:inline-block;
+    background:var(--gold);
+    color:var(--charcoal);
+    font-family:'Inter',sans-serif;
+    font-size:10px;
+    font-weight:700;
+    letter-spacing:.5px;
+    padding:3px 8px;
+    border-radius:999px;
+    vertical-align:middle;
+    margin-left:8px;
+    position:relative;
+    top:-4px;
+  }
+  .beta-banner{
+    background:#3a2f1a;
+    color:var(--gold-light);
+    font-size:11px;
+    text-align:center;
+    padding:8px 14px;
+    line-height:1.4;
+  }
+  .brand .slogan{
+    font-family:'Fraunces',serif;
+    font-style:italic;
+    font-weight:500;
+    color:var(--gold-light);
+    font-size:13px;
+    margin-top:2px;
+  }
+  .brand .meta{
+    font-size:11px;
+    color:#c9c4b6;
+    margin-top:6px;
+  }
+  .gold-rule{
+    height:2px;
+    background:linear-gradient(90deg, transparent, var(--gold) 15%, var(--gold) 85%, transparent);
+  }
+  /* segmented control */
+  .segmented{
+    display:flex;
+    gap:0;
+    background:var(--charcoal-2);
+    border-radius:999px;
+    padding:4px;
+    margin:16px 0;
+  }
+  .segmented button{
+    flex:1;
+    border:none;
+    background:transparent;
+    color:#c9c4b6;
+    font-family:'Inter',sans-serif;
+    font-weight:600;
+    font-size:13px;
+    padding:10px 8px;
+    border-radius:999px;
+    cursor:pointer;
+    transition:all .25s ease;
+    letter-spacing:.2px;
+  }
+  .segmented button.active{
+    background:var(--gold);
+    color:var(--charcoal);
+  }
+  /* ---------- Body scroll area ---------- */
+  main{
+    flex:1;
+    overflow-y:auto;
+    padding:18px 20px 100px 20px;
+  }
+  .section-label{
+    font-size:11.5px;
+    font-weight:700;
+    letter-spacing:1.2px;
+    color:var(--charcoal);
+    border-bottom:1.5px solid var(--gold);
+    padding-bottom:6px;
+    margin:22px 0 12px 0;
+  }
+  .section-label:first-child{margin-top:0;}
+
+  /* date chips */
+  .date-row{
+    display:flex;
+    gap:8px;
+    overflow-x:auto;
+    padding-bottom:6px;
+    scrollbar-width:none;
+  }
+  .date-row::-webkit-scrollbar{display:none;}
+  .date-chip{
+    flex:0 0 auto;
+    background:var(--white);
+    border:1.5px solid var(--line);
+    border-radius:12px;
+    padding:9px 12px;
+    text-align:center;
+    cursor:pointer;
+    min-width:54px;
+    transition:all .2s ease;
+  }
+  .date-chip .dow{
+    font-size:10px;
+    text-transform:uppercase;
+    letter-spacing:.5px;
+    color:var(--grey-light);
+    font-weight:600;
+  }
+  .date-chip .dnum{
+    font-family:'Fraunces',serif;
+    font-weight:600;
+    font-size:18px;
+    color:var(--charcoal);
+    margin-top:2px;
+  }
+  .date-chip.active{
+    background:var(--charcoal);
+    border-color:var(--charcoal);
+  }
+  .date-chip.active .dow{color:var(--gold-light);}
+  .date-chip.active .dnum{color:var(--cream);}
+  .date-chip.closed{
+    background:var(--cream-2);
+    opacity:.55;
+    cursor:not-allowed;
+  }
+  .date-chip.closed .dnum{
+    color:var(--grey-light);
+    text-decoration:line-through;
+  }
+  .date-chip .dclosed{
+    font-size:8.5px;
+    text-transform:uppercase;
+    letter-spacing:.3px;
+    color:var(--oxblood);
+    font-weight:700;
+    margin-top:2px;
+  }
+
+  /* service categories */
+  .cat-tabs{
+    display:flex;
+    gap:6px;
+    margin-bottom:10px;
+  }
+  .cat-tab{
+    flex:1;
+    text-align:center;
+    padding:8px 4px;
+    font-size:11px;
+    font-weight:700;
+    letter-spacing:.6px;
+    border:1.5px solid var(--line);
+    background:var(--white);
+    border-radius:10px;
+    cursor:pointer;
+    color:var(--grey);
+  }
+  .cat-tab.active{
+    background:var(--gold);
+    border-color:var(--gold);
+    color:var(--charcoal);
+  }
+  .service-list{
+    display:flex;
+    flex-direction:column;
+    gap:8px;
+  }
+  .service-item{
+    display:flex;
+    justify-content:space-between;
+    align-items:center;
+    background:var(--white);
+    border:1.5px solid var(--line);
+    border-radius:12px;
+    padding:12px 14px;
+    cursor:pointer;
+    transition:all .18s ease;
+  }
+  .service-item.selected{
+    border-color:var(--gold);
+    background:#fbf6ea;
+  }
+  .service-item .s-name{
+    font-size:14px;
+    font-weight:600;
+    color:var(--charcoal);
+  }
+  .service-item .s-dur{
+    font-size:11px;
+    color:var(--grey-light);
+    font-style:italic;
+    margin-top:2px;
+  }
+  .service-item .s-price{
+    font-family:'Fraunces',serif;
+    font-weight:600;
+    color:var(--gold);
+    font-size:15px;
+    white-space:nowrap;
+  }
+
+  /* time slots */
+  .slot-grid{
+    display:grid;
+    grid-template-columns:repeat(3, 1fr);
+    gap:8px;
+  }
+  .time-sublabel{
+    font-size:11px;
+    font-weight:700;
+    color:var(--gold);
+    letter-spacing:.6px;
+    margin:10px 0 8px 0;
+  }
+  .time-sublabel:first-of-type{margin-top:0;}
+  .slot{
+    padding:10px 4px;
+    text-align:center;
+    border-radius:9px;
+    font-weight:600;
+    font-size:13.5px;
+    cursor:pointer;
+    border:1.5px solid transparent;
+  }
+  .slot.free{
+    background:var(--sage-light);
+    color:var(--sage);
+    border-color:#cfe0d1;
+  }
+  .slot.free:hover{border-color:var(--sage);}
+  .slot.busy{
+    background:var(--oxblood-light);
+    color:var(--oxblood);
+    opacity:.7;
+    cursor:not-allowed;
+  }
+  .slot.pausa{
+    background:#f5ecd9;
+    color:#8a6a1f;
+    border-color:#e0c98a;
+    opacity:.85;
+    cursor:not-allowed;
+    font-size:11px;
+    font-weight:700;
+    letter-spacing:.3px;
+  }
+  .slot.picked{
+    background:var(--charcoal);
+    color:var(--gold-light);
+    border-color:var(--charcoal);
+  }
+  .empty-note{
+    font-size:12.5px;
+    color:var(--grey-light);
+    font-style:italic;
+    padding:10px 2px;
+  }
+  .closed-note{
+    background:var(--oxblood-light);
+    color:var(--oxblood);
+    padding:12px 14px;
+    border-radius:10px;
+    font-size:13px;
+    font-weight:600;
+  }
+
+  /* legend */
+  .legend{
+    display:flex;
+    gap:16px;
+    font-size:11px;
+    color:var(--grey);
+    margin-top:10px;
+  }
+  .legend span{display:flex;align-items:center;gap:5px;}
+  .dot{width:9px;height:9px;border-radius:50%;display:inline-block;}
+  .dot.free{background:var(--sage);}
+  .dot.busy{background:var(--oxblood);}
+  .dot.pausa{background:#c9a227;}
+
+  /* summary bar */
+  .summary-bar{
+    position:sticky;
+    bottom:0;
+    background:var(--white);
+    border-top:1.5px solid var(--line);
+    padding:12px 16px;
+    display:flex;
+    align-items:center;
+    justify-content:space-between;
+    gap:10px;
+    box-shadow:0 -4px 16px rgba(0,0,0,0.05);
+  }
+  .summary-bar .sum-text{
+    font-size:12.5px;
+    color:var(--grey);
+    line-height:1.4;
+  }
+  .summary-bar .sum-text b{color:var(--charcoal);}
+  .btn-primary{
+    background:var(--charcoal);
+    color:var(--gold-light);
+    border:none;
+    padding:12px 18px;
+    border-radius:10px;
+    font-weight:700;
+    font-size:13px;
+    cursor:pointer;
+    white-space:nowrap;
+  }
+  .btn-primary:disabled{
+    background:#c9c4b6;
+    color:#fff;
+    cursor:not-allowed;
+  }
+
+  /* form / modal */
+  .sheet-overlay{
+    position:absolute;
+    inset:0;
+    background:rgba(28,28,28,0.55);
+    display:flex;
+    align-items:flex-end;
+    z-index:20;
+  }
+  .sheet{
+    background:var(--cream);
+    width:100%;
+    border-radius:20px 20px 0 0;
+    padding:22px 22px 26px 22px;
+    animation:slideup .25s ease;
+  }
+  @keyframes slideup{from{transform:translateY(30px);opacity:0;}to{transform:translateY(0);opacity:1;}}
+  .sheet h3{
+    font-family:'Fraunces',serif;
+    font-size:19px;
+    margin:0 0 4px 0;
+  }
+  .sheet .sheet-sub{
+    font-size:12.5px;
+    color:var(--grey-light);
+    margin-bottom:16px;
+  }
+  .field{margin-bottom:12px;}
+  .field label{
+    font-size:11.5px;
+    font-weight:700;
+    color:var(--grey);
+    letter-spacing:.3px;
+    display:block;
+    margin-bottom:5px;
+  }
+  .field input{
+    width:100%;
+    padding:11px 12px;
+    border-radius:9px;
+    border:1.5px solid var(--line);
+    background:var(--white);
+    font-family:'Inter',sans-serif;
+    font-size:14px;
+  }
+  .field input:focus{outline:none;border-color:var(--gold);}
+  .privacy-note{
+    font-size:11px;
+    color:var(--grey-light);
+    line-height:1.5;
+    margin:2px 0 12px 0;
+  }
+  .privacy-check{
+    display:flex;
+    align-items:flex-start;
+    gap:8px;
+    font-size:12px;
+    color:var(--grey);
+    line-height:1.4;
+    cursor:pointer;
+    margin-bottom:6px;
+  }
+  .privacy-check input{
+    margin-top:2px;
+    flex:0 0 auto;
+  }
+  .sheet-actions{
+    display:flex;
+    gap:10px;
+    margin-top:18px;
+  }
+  .btn-secondary{
+    flex:0 0 auto;
+    background:transparent;
+    border:1.5px solid var(--line);
+    color:var(--grey);
+    padding:12px 16px;
+    border-radius:10px;
+    font-weight:600;
+    font-size:13px;
+    cursor:pointer;
+  }
+  .changelog-scroll{
+    max-height:50vh;
+    overflow-y:auto;
+    margin-top:4px;
+  }
+  .changelog-entry{
+    padding:12px 0;
+    border-bottom:1px dashed var(--line);
+  }
+  .changelog-entry:last-child{border-bottom:none;}
+  .changelog-version{
+    font-family:'Fraunces',serif;
+    font-weight:700;
+    font-size:15px;
+    color:var(--charcoal);
+  }
+  .changelog-date{
+    font-family:'Inter',sans-serif;
+    font-weight:400;
+    font-size:11px;
+    color:var(--grey-light);
+    margin-left:6px;
+  }
+  .changelog-summary{
+    font-size:12px;
+    color:var(--grey);
+    line-height:1.55;
+    margin:5px 0 6px 0;
+    font-style:italic;
+  }
+  .changelog-list{
+    margin:6px 0 0 0;
+    padding-left:18px;
+    font-size:12.5px;
+    color:var(--grey);
+    line-height:1.6;
+  }
+  .summary-entry{
+    padding:10px 0;
+    border-bottom:1px dashed var(--line);
+  }
+  .summary-entry:last-child{border-bottom:none;}
+  .summary-title{
+    font-weight:700;
+    font-size:12.5px;
+    color:var(--charcoal);
+    margin-bottom:3px;
+  }
+  .summary-text{
+    font-size:12px;
+    color:var(--grey);
+    line-height:1.5;
+  }
+
+  /* confirmation screen */
+  .confirm-screen{
+    text-align:center;
+    padding:30px 6px;
+  }
+  .confirm-icon{
+    width:56px;height:56px;border-radius:50%;
+    background:var(--sage-light);
+    color:var(--sage);
+    display:flex;align-items:center;justify-content:center;
+    font-size:26px;
+    margin:0 auto 16px auto;
+  }
+  .confirm-screen h3{
+    font-family:'Fraunces',serif;
+    font-size:21px;
+    margin:0 0 6px 0;
+  }
+  .confirm-detail{
+    background:var(--white);
+    border:1.5px solid var(--line);
+    border-radius:12px;
+    padding:16px;
+    text-align:left;
+    font-size:13.5px;
+    margin:18px 0;
+    line-height:1.9;
+  }
+  .confirm-detail b{color:var(--charcoal);}
+  .reminder-list{
+    text-align:left;
+    font-size:12.5px;
+    color:var(--grey);
+    margin:14px 0;
+    display:flex;
+    flex-direction:column;
+    gap:6px;
+  }
+  .reminder-list div{display:flex;gap:8px;align-items:flex-start;}
+  .wa-btn{
+    display:block;
+    width:100%;
+    background:#25D366;
+    color:white;
+    text-decoration:none;
+    padding:13px;
+    border-radius:10px;
+    font-weight:700;
+    font-size:13.5px;
+    text-align:center;
+    margin-top:6px;
+  }
+  .link-btn{
+    background:none;
+    border:none;
+    color:var(--grey);
+    text-decoration:underline;
+    font-size:12.5px;
+    margin-top:14px;
+    cursor:pointer;
+  }
+
+  /* ---------- Owner view ---------- */
+  .pin-screen{
+    padding:60px 10px;
+    text-align:center;
+  }
+  .pin-screen .lock{
+    width:52px;height:52px;border-radius:50%;
+    background:var(--charcoal);
+    color:var(--gold-light);
+    display:flex;align-items:center;justify-content:center;
+    font-size:22px;
+    margin:0 auto 18px auto;
+  }
+  .pin-screen h3{font-family:'Fraunces',serif;font-size:19px;margin:0 0 6px 0;}
+  .pin-screen p{font-size:12.5px;color:var(--grey-light);margin-bottom:18px;}
+  .pin-input{
+    width:160px;
+    text-align:center;
+    letter-spacing:8px;
+    font-size:20px;
+    padding:12px;
+    border-radius:10px;
+    border:1.5px solid var(--line);
+    margin-bottom:10px;
+  }
+  .pin-hint{font-size:11px;color:var(--grey-light);margin-top:10px;}
+
+  .owner-stats{
+    display:flex;
+    gap:10px;
+    margin-bottom:18px;
+  }
+  .breaks-section{
+    margin-bottom:22px;
+  }
+  .rubrica-section{
+    margin-bottom:18px;
+  }
+  .contact-row{
+    display:flex;
+    justify-content:space-between;
+    align-items:center;
+    background:var(--white);
+    border:1.5px solid var(--line);
+    border-radius:12px;
+    padding:12px 14px;
+    margin-bottom:8px;
+  }
+  .contact-name{
+    font-weight:600;
+    font-size:13.5px;
+    color:var(--charcoal);
+  }
+  .contact-sub{
+    font-size:11.5px;
+    color:var(--grey-light);
+    margin-top:2px;
+  }
+  .contact-invited{
+    font-size:11px;
+    color:var(--sage);
+    margin-top:3px;
+    font-weight:600;
+  }
+  .break-row{
+    background:var(--white);
+    border:1.5px solid var(--line);
+    border-radius:12px;
+    padding:12px 14px;
+    margin-bottom:8px;
+  }
+  .break-row-top{
+    display:flex;
+    justify-content:space-between;
+    align-items:center;
+  }
+  .break-title{
+    font-weight:600;
+    font-size:13.5px;
+    color:var(--charcoal);
+  }
+  .break-toggle{
+    position:relative;
+    display:inline-block;
+    width:40px;
+    height:22px;
+  }
+  .break-toggle input{
+    opacity:0;
+    width:0;
+    height:0;
+  }
+  .break-toggle-slider{
+    position:absolute;
+    cursor:pointer;
+    inset:0;
+    background:var(--line);
+    border-radius:999px;
+    transition:.2s;
+  }
+  .break-toggle-slider:before{
+    position:absolute;
+    content:"";
+    height:16px;
+    width:16px;
+    left:3px;
+    top:3px;
+    background:white;
+    border-radius:50%;
+    transition:.2s;
+  }
+  .break-toggle input:checked + .break-toggle-slider{
+    background:#c9a227;
+  }
+  .break-toggle input:checked + .break-toggle-slider:before{
+    transform:translateX(18px);
+  }
+  .break-times{
+    display:flex;
+    align-items:center;
+    gap:8px;
+    margin-top:10px;
+    padding-top:10px;
+    border-top:1px dashed var(--line);
+    font-size:13px;
+    color:var(--grey);
+  }
+  .break-times input[type="time"]{
+    border:1.5px solid var(--line);
+    border-radius:8px;
+    padding:6px 8px;
+    font-family:'Inter',sans-serif;
+    font-size:13px;
+    background:var(--white);
+  }
+  .stat-card{
+    flex:1;
+    background:var(--white);
+    border:1.5px solid var(--line);
+    border-radius:12px;
+    padding:12px;
+    text-align:center;
+  }
+  .stat-card .stat-num{
+    font-family:'Fraunces',serif;
+    font-weight:700;
+    font-size:22px;
+    color:var(--charcoal);
+  }
+  .stat-card .stat-label{
+    font-size:10.5px;
+    color:var(--grey-light);
+    margin-top:2px;
+    letter-spacing:.3px;
+  }
+  .booking-card{
+    background:var(--white);
+    border:1.5px solid var(--line);
+    border-radius:12px;
+    padding:14px;
+    margin-bottom:10px;
+    position:relative;
+  }
+  .booking-card.new{border-color:var(--gold);background:#fbf6ea;}
+  .booking-card .b-top{
+    display:flex;
+    justify-content:space-between;
+    align-items:flex-start;
+  }
+  .booking-card .b-time{
+    font-family:'Fraunces',serif;
+    font-weight:700;
+    font-size:17px;
+    color:var(--charcoal);
+  }
+  .booking-card .b-date{
+    font-size:10.5px;
+    color:var(--grey-light);
+    text-transform:uppercase;
+    letter-spacing:.4px;
+  }
+  .badge-new{
+    background:var(--gold);
+    color:var(--charcoal);
+    font-size:9.5px;
+    font-weight:700;
+    padding:3px 8px;
+    border-radius:999px;
+    letter-spacing:.3px;
+  }
+  .booking-card .b-service{
+    font-size:13px;
+    color:var(--grey);
+    margin-top:6px;
+  }
+  .booking-card .b-created{
+    font-size:11px;
+    color:var(--grey-light);
+    font-style:italic;
+    margin-top:3px;
+  }
+  .booking-card .b-client{
+    display:flex;
+    justify-content:space-between;
+    align-items:center;
+    margin-top:10px;
+    padding-top:10px;
+    border-top:1px dashed var(--line);
+  }
+  .booking-card .b-name{
+    font-weight:600;
+    font-size:13.5px;
+    color:var(--charcoal);
+  }
+  .booking-card .b-phone{
+    font-size:11.5px;
+    color:var(--grey-light);
+  }
+  .icon-btn{
+    background:var(--sage-light);
+    color:var(--sage);
+    border:none;
+    border-radius:8px;
+    padding:7px 10px;
+    font-size:12px;
+    cursor:pointer;
+    text-decoration:none;
+  }
+  .empty-state{
+    text-align:center;
+    padding:50px 20px;
+    color:var(--grey-light);
+  }
+  .empty-state .e-icon{font-size:32px;margin-bottom:10px;}
+  .toast{
+    position:absolute;
+    top:14px;
+    left:50%;
+    transform:translateX(-50%);
+    background:var(--charcoal);
+    color:var(--cream);
+    padding:10px 16px;
+    border-radius:999px;
+    font-size:12.5px;
+    font-weight:600;
+    z-index:40;
+    box-shadow:0 6px 20px rgba(0,0,0,0.3);
+    animation:toastin .3s ease;
+    white-space:nowrap;
+  }
+  @keyframes toastin{from{opacity:0;transform:translate(-50%,-8px);}to{opacity:1;transform:translate(-50%,0);}}
+  .app-footer{
+    text-align:center;
+    font-size:10.5px;
+    color:var(--grey-light);
+    padding:14px 10px 4px 10px;
+  }
+  .version-tag{
+    display:inline-block;
+    font-size:9.5px;
+    color:var(--grey-light);
+    margin-top:4px;
+  }
+  .version-tag.clickable{
+    cursor:pointer;
+    text-decoration:underline;
+  }
+</style>
+</head>
+<body>
+<div id="app"></div>
+
+<script>
+/* ================= DATA ================= */
+const SHOP = {
+  name: "HairEvolution",
+  slogan: "l'artigiano dei capelli",
+  owner: "Mario Catena",
+  phoneDisplay: "+39 380 347 6905",
+  ownerPhone: "393803476905", // whatsapp format
+  devPhone: "393280319471", // numero dello sviluppatore, solo per test interni
+  bookingLink: "https://sunny-lolly-3221bd.netlify.app", // link pubblico da condividere con i clienti
+  hours: "8:30–12:30 & 15:00–19:00",
+  closedDaysLabel: "Chiuso: domenica e lunedì",
+  closedDays: [0,1], // Sunday, Monday
+  // Specific closed dates: national holidays 2026 + local patron saint feast
+  closedDates: [
+    "2026-01-01", // Capodanno
+    "2026-01-06", // Epifania
+    "2026-04-06", // Lunedì dell'Angelo (Pasquetta)
+    "2026-04-25", // Festa della Liberazione
+    "2026-05-01", // Festa del Lavoro
+    "2026-06-02", // Festa della Repubblica
+    "2026-08-15", // Ferragosto
+    "2026-10-22", // Festa patronale
+    "2026-11-01", // Ognissanti
+    "2026-12-08", // Immacolata Concezione
+    "2026-12-25", // Natale
+    "2026-12-26", // Santo Stefano
+  ]
+};
+
+const APP_VERSION = "1.27";
+const APP_VERSION_DATE = "22/09/2026";
+
+const APP_SUMMARY = [
+  { title:"Giorni disponibili", text:"L'app mostra i prossimi 14 giorni prenotabili. I giorni chiusi (domenica, lunedì, festività 2026 e la festa patronale del 22 ottobre) restano visibili ma in grigio e non selezionabili." },
+  { title:"Orari di apertura", text:"Mattina 8:30–12:30, pomeriggio 15:00–19:00. È concesso un margine extra di 30 minuti oltre la chiusura ufficiale, per non perdere l'ultimo cliente della fascia." },
+  { title:"Slot occupati", text:"Ogni prenotazione blocca un numero di slot da 15 minuti, arrotondato per difetto rispetto alla durata reale del servizio, con un minimo di 15 minuti bloccati anche per i servizi più brevi." },
+  { title:"Alla conferma", text:"Servizio e orario selezionati si azzerano automaticamente dopo ogni prenotazione, così non restano agganciati al tentativo successivo." },
+  { title:"WhatsApp", text:"Il pulsante di conferma apre una chat WhatsApp reale verso il numero del titolare — l'invio resta manuale, nessun messaggio parte da solo." },
+  { title:"Limiti attuali (beta)", text:"Le prenotazioni non sono salvate in modo permanente e si azzerano ricaricando la pagina. Nessuna notifica automatica è ancora attiva." },
+];
+
+const CHANGELOG = [
+  { version:"1.27", date:"22/09/2026",
+    summary:"Aggiunta la data e l'ora in cui \u00e8 stata effettuata ogni prenotazione (distinta dall'orario dell'appuntamento). Compare come piccola riga \"Prenotato il...\" nella card della prenotazione, lato Titolare. Le prenotazioni fatte prima di questa versione non hanno questo dato e semplicemente non mostrano la riga.",
+    changes:[
+    "Aggiunta la data/ora di creazione (createdAt) a ogni nuova prenotazione",
+    "Mostrata come \"Prenotato il...\" nella card lato Titolare"
+  ]},
+  { version:"1.26", date:"22/09/2026",
+    summary:"Corretto un bug reale: gli orari di oggi gi\u00e0 passati potevano ancora essere prenotati, perch\u00e9 il controllo di disponibilit\u00e0 non confrontava mai l'orario dello slot con l'ora attuale del dispositivo. Ora un orario di oggi gi\u00e0 trascorso risulta bloccato, senza alcun margine extra di sicurezza (basta che sia passato anche di un minuto).",
+    changes:[
+    "Bloccati gli orari di oggi gi\u00e0 passati rispetto all'ora attuale del dispositivo"
+  ]},
+  { version:"1.25", date:"13/09/2026",
+    summary:"Aggiunto il tracciamento degli inviti nella Rubrica Clienti: ogni volta che si preme \"Invita\", viene registrata la data e mostrata sotto al contatto (\"Invitato il...\"). Il pulsante resta sempre premibile per reinvitare quando serve, aggiornando la data pi\u00f9 recente.",
+    changes:[
+    "Aggiunta la data dell'ultimo invito sotto ogni contatto della rubrica",
+    "Il pulsante diventa \"Invita di nuovo\" dopo il primo invio"
+  ]},
+  { version:"1.24", date:"13/09/2026",
+    summary:"Aggiunta la Rubrica Clienti nella vista Titolare: elenco automatico dei clienti che hanno gi\u00e0 prenotato (con numero di visite e data dell'ultima), pi\u00f9 la possibilit\u00e0 di aggiungere a mano clienti che non hanno ancora mai prenotato. Ogni contatto ha un pulsante \"Invita\" che apre WhatsApp con un messaggio pronto contenente il link per prenotare.",
+    changes:[
+    "Aggiunta la sezione Rubrica Clienti nella vista Titolare",
+    "Pulsante \"+ Aggiungi cliente\" per inserire contatti manualmente",
+    "Pulsante \"Invita\" su ogni contatto: apre WhatsApp con link di prenotazione pronto"
+  ]},
+  { version:"1.23", date:"13/09/2026",
+    summary:"Aggiunta una nuova sezione \"Gestisci pause\" nella vista Titolare: il titolare pu\u00f2 attivare/disattivare a piacere una pausa mattina e una pausa pomeriggio, con orari modificabili liberamente. Le pause sono ricorrenti ogni giorno finch\u00e9 non vengono disattivate. Gli slot in pausa sono mostrati ai clienti con un colore ambra distintivo ed etichetta \"Pausa\", invece del solito rosso \"Occupato\". La regola di blocco \u00e8 stata raffinata: un appuntamento viene bloccato solo se il suo orario di inizio cade dentro la pausa, non se semplicemente la sfiora finendo qualche minuto dopo.",
+    changes:[
+    "Aggiunta la gestione pause (mattina/pomeriggio) nella vista Titolare",
+    "Nuovo colore e etichetta \"Pausa\" per gli slot orari interessati",
+    "Le prenotazioni gi\u00e0 esistenti in un orario diventato pausa restano valide",
+    "Un appuntamento \u00e8 bloccato dalla pausa solo se inizia dentro l'orario di pausa"
+  ]},
+  { version:"1.22", date:"09/09/2026",
+    summary:"Rimosso il suggerimento del PIN visibile a schermo (\"PIN demo: 1234\") e cambiato il PIN di accesso alla vista Titolare da 1234 a un nuovo codice privato.",
+    changes:[
+    "Rimosso il suggerimento del PIN a schermo",
+    "Cambiato il PIN di accesso titolare"
+  ]},
+  { version:"1.21", date:"09/09/2026",
+    summary:"Cambiato il nome precompilato che appare quando l'app viene aggiunta alla schermata Home, da \"HairEvolution\" a \"HairEvolution by BarberApp\". Il titolare può comunque modificarlo lui stesso in quel momento, se preferisce.",
+    changes:[
+    "Aggiornato il nome precompilato per l'installazione sulla schermata Home"
+  ]},
+  { version:"1.20", date:"09/09/2026",
+    summary:"Aggiunto un pulsante di test riservato allo sviluppatore nella vista Titolare: invia un messaggio WhatsApp al numero personale dello sviluppatore, separato dal numero reale del titolare, utile per verificare che tutto funzioni senza disturbare il negozio.",
+    changes:[
+    "Aggiunto pulsante \"Invia messaggio di test (sviluppatore)\" nella vista Titolare"
+  ]},
+  { version:"1.19", date:"09/09/2026",
+    summary:"Corretto un numero di telefono errato: il pulsante WhatsApp inviava i messaggi a un numero diverso (+39 328 031 9471) da quello mostrato nell'header e realmente in uso dal titolare (+39 380 347 6905). Ora entrambi corrispondono.",
+    changes:[
+    "Corretto il numero WhatsApp usato per l'invio dei messaggi al titolare"
+  ]},
+  { version:"1.18", date:"09/09/2026",
+    summary:"Prima prova di database condiviso: le prenotazioni non vivono più solo nel browser di chi prenota, ma vengono salvate tramite una funzione Netlify (Netlify Blobs), visibili da qualsiasi dispositivo. Se il database non è raggiungibile, l'app continua a funzionare salvando solo in locale, come rete di sicurezza.",
+    changes:[
+    "Aggiunta una funzione serverless (netlify/functions/bookings.js) per salvare/leggere le prenotazioni in modo condiviso",
+    "L'app ora sincronizza le prenotazioni con il database a ogni avvio, prenotazione, azzeramento e apertura della dashboard titolare"
+  ]},
+  { version:"1.17", date:"09/09/2026",
+    summary:"Corretto il pulsante WhatsApp lato Titolare: prima apriva una chat vuota verso il cliente (nessun messaggio da inviare) e il numero poteva risultare malformato se il cliente aveva già digitato il prefisso. Ora il numero viene sempre normalizzato correttamente e il messaggio di conferma è già precompilato, pronto per essere inviato con un tocco.",
+    changes:[
+    "Aggiunto messaggio precompilato al pulsante WhatsApp lato Titolare",
+    "Corretta la normalizzazione del prefisso telefonico per evitare numeri malformati"
+  ]},
+  { version:"1.16", date:"09/09/2026",
+    summary:"Le prenotazioni ora vengono salvate nella memoria del browser (localStorage) e non si perdono più chiudendo o ricaricando la pagina — utile per test più realistici. Restano comunque legate al singolo dispositivo/browser: non sono condivise online tra più persone.",
+    changes:[
+    "Le prenotazioni persistono tra le sessioni (salvate nel browser, non più azzerate al reload)"
+  ]},
+  { version:"1.15", date:"09/09/2026",
+    summary:"Aggiunta al modulo di prenotazione una breve nota informativa sull'uso dei dati (nome e telefono) e una casella di consenso obbligatoria: senza spuntarla, la prenotazione non può essere confermata.",
+    changes:[
+    "Aggiunta nota privacy e checkbox di consenso obbligatoria nel modulo di prenotazione"
+  ]},
+  { version:"1.14", date:"09/09/2026",
+    summary:"Testo di copyright definitivo in fondo alla pagina: \"© 2026 BarberApp by ML Tutti i diritti riservati\" (senza trattini né punti).",
+    changes:[
+    "Rimosso il punto dopo \"ML\" nel copyright del footer"
+  ]},
+  { version:"1.13", date:"09/09/2026",
+    summary:"Rifinito il testo di copyright in fondo alla pagina: \"© 2026 BarberApp by ML. Tutti i diritti riservati\" (senza trattino né punto finale).",
+    changes:[
+    "Rifinito il testo di copyright nel footer"
+  ]},
+  { version:"1.12", date:"09/09/2026",
+    summary:"Aggiornato il testo di copyright in fondo alla pagina: \"© 2026 BarberApp — creata da ML. Tutti i diritti riservati.\"",
+    changes:[
+    "Modificato il copyright nel footer"
+  ]},
+  { version:"1.11", date:"09/09/2026",
+    summary:"Aggiunte le impostazioni tecniche per poter aggiungere l'app come scorciatoia sulla schermata Home del telefono, con icona propria e apertura a schermo intero (senza barra del browser), più simile a un'app vera.",
+    changes:[
+    "Aggiunta icona personalizzata e meta tag per l'installazione come app sulla schermata Home"
+  ]},
+  { version:"1.10", date:"09/09/2026",
+    summary:"Ogni voce della cronologia ora mostra anche una breve descrizione di come funzionava l'app a quella versione, non solo l'elenco secco delle modifiche.",
+    changes:[
+    "Aggiunta una descrizione discorsiva a ogni versione della cronologia"
+  ]},
+  { version:"1.9", date:"09/09/2026",
+    summary:"Il numero di versione cliccabile apre la cronologia solo dalla vista Titolare — in vista Cliente resta testo semplice.",
+    changes:[
+    "Il numero di versione cliccabile è ora visibile solo nella vista Titolare, non in quella Cliente"
+  ]},
+  { version:"1.8", date:"09/09/2026",
+    summary:"Introdotta la finestra \"Cronologia versione\", consultabile dalla vista Titolare, con il riepilogo generale di come funziona la prenotazione e lo storico di tutte le modifiche fatte finora.",
+    changes:[
+    "Il numero di versione nel footer è ora cliccabile (in entrambe le viste) e apre direttamente il riepilogo/cronologia"
+  ]},
+  { version:"1.7", date:"09/09/2026",
+    summary:"Il pulsante di conferma prenotazione torna a inviare un WhatsApp reale (manuale) al numero del titolare, per permettere test più realistici rispetto alla simulazione della beta iniziale.",
+    changes:[
+    "Riattivato l'invio WhatsApp reale (manuale) al titolare",
+    "Aggiornato il banner di avviso beta"
+  ]},
+  { version:"1.6", date:"09/09/2026",
+    summary:"Aggiunto un numero di versione visibile in fondo alla pagina, per capire a colpo d'occhio se il sito online è aggiornato.",
+    changes:[
+    "Aggiunto il numero di versione nel footer dell'app"
+  ]},
+  { version:"1.5", date:"09/09/2026",
+    summary:"I giorni di chiusura non spariscono più dal calendario: restano visibili ma in grigio, con il numero barrato e l'etichetta \"chiuso\", così il cliente capisce subito perché non sono selezionabili.",
+    changes:[
+    "Le date chiuse ora sono visibili in grigio (barrate) invece di sparire dal calendario"
+  ]},
+  { version:"1.4", date:"09/09/2026",
+    summary:"Oltre alla chiusura settimanale di domenica e lunedì, l'app esclude ora anche le festività nazionali italiane 2026 e la festa patronale del 22 ottobre.",
+    changes:[
+    "Aggiunte le chiusure per le festività italiane 2026 e la festa patronale del 22 ottobre"
+  ]},
+  { version:"1.3", date:"08/09/2026",
+    summary:"Rivista la logica di calcolo degli slot occupati: ogni servizio blocca ora un numero di slot da 15 minuti pari alla durata arrotondata per difetto, con un minimo garantito di 15 minuti anche per i servizi più brevi. Prima, servizi con durata non multipla di 15 (es. 20 o 35 min) bloccavano più tempo del necessario.",
+    changes:[
+    "Corretto l'arrotondamento degli slot occupati: ogni servizio blocca un minimo di 15 minuti, arrotondato per difetto ai 15 minuti più vicini"
+  ]},
+  { version:"1.2", date:"08/09/2026",
+    summary:"Corretto un bug di UX: il servizio scelto restava agganciato da una prenotazione all'altra, causando confusione sugli orari disponibili. Ora si azzera automaticamente sia cambiando categoria sia dopo aver confermato una prenotazione.",
+    changes:[
+    "Il servizio selezionato si azzera automaticamente dopo ogni prenotazione confermata e al cambio di categoria"
+  ]},
+  { version:"1.1", date:"08/09/2026",
+    summary:"Aggiunta la scritta di copyright in fondo alla pagina, visibile in entrambe le viste dell'app.",
+    changes:[
+    "Aggiunto il copyright \"© 2026 by ML per HairEvolution\""
+  ]},
+  { version:"1.0", date:"08/09/2026",
+    summary:"Versione beta iniziale creata a partire dall'app originale: badge \"BETA\" nell'header, banner di avviso versione di test, e pulsante WhatsApp simulato (nessun invio reale) per evitare messaggi accidentali al numero vero del titolare durante i test dei clienti.",
+    changes:[
+    "Versione beta iniziale: badge BETA, banner di test, pulsante WhatsApp simulato"
+  ]},
+];
+
+const CATEGORIES = [
+  {
+    key: "taglio", label: "Taglio",
+    services: [
+      { id:"t1", name:"Taglio", price:13, dur:30 },
+      { id:"t2", name:"Taglio rasato a macchinetta", price:9, dur:15 },
+      { id:"t3", name:"Taglio + shampoo", price:18, dur:35 },
+      { id:"t4", name:"Taglio + rasatura barba", price:18, dur:40 },
+      { id:"t5", name:"Taglio + shampoo + barba", price:22, dur:45 },
+      { id:"t6", name:"Taglio + shampoo + barba modellata", price:25, dur:60 },
+    ]
+  },
+  {
+    key: "barba", label: "Barba",
+    services: [
+      { id:"b1", name:"Rasatura barba", price:6, dur:15 },
+      { id:"b2", name:"Barba modellata classica", price:8, dur:20 },
+      { id:"b3", name:"Barba modellata sfumata", price:8, dur:30 },
+    ]
+  },
+  {
+    key: "trattamenti", label: "Trattamenti",
+    services: [
+      { id:"r1", name:"Lozione", price:5, dur:5 },
+      { id:"r2", name:"Shampoo", price:6, dur:5 },
+      { id:"r3", name:"Shampoo + lozione", price:13, dur:20 },
+      { id:"r5", name:"Colore", price:30, dur:45 },
+      { id:"r6", name:"Colpi di sole", price:30, dur:60 },
+    ]
+  }
+];
+
+const ALL_SERVICES = CATEGORIES.flatMap(c => c.services);
+const DOW = ["Dom","Lun","Mar","Mer","Gio","Ven","Sab"];
+const MONTHS = ["gen","feb","mar","apr","mag","giu","lug","ago","set","ott","nov","dic"];
+
+/* ================= STATE ================= */
+let state = {
+  view: "cliente", // cliente | titolare
+  ownerUnlocked: false,
+  pinInput: "",
+  pinError: false,
+  selectedDate: null, // 'YYYY-MM-DD'
+  activeCat: "taglio",
+  selectedService: null,
+  selectedSlot: null, // "HH:MM"
+  bookings: [], // {id, date, time, serviceId, name, phone, seenByOwner}
+  showForm: false,
+  formName: "",
+  formPhone: "",
+  showConfirm: false,
+  lastBooking: null,
+  toast: null,
+};
+
+function fmtEUR(n){ return "€" + n.toFixed(2).replace(".", ","); }
+
+function pad(n){ return n<10 ? "0"+n : ""+n; }
+
+function dateKey(d){ return d.getFullYear()+"-"+pad(d.getMonth()+1)+"-"+pad(d.getDate()); }
+
+function isClosedDate(d){
+  return SHOP.closedDays.includes(d.getDay()) || SHOP.closedDates.includes(dateKey(d));
+}
+
+function nextDays(openCount){
+  // Returns a run of consecutive calendar days that includes at least
+  // `openCount` open (bookable) days. Closed days (weekly or specific
+  // dates) are kept in the list too, so they can be shown greyed out
+  // instead of silently disappearing.
+  const out = [];
+  let d = new Date();
+  let openFound = 0;
+  let i = 0;
+  while(openFound < openCount && i < 90){
+    const cur = new Date(d);
+    cur.setDate(d.getDate()+i);
+    out.push(cur);
+    if(!isClosedDate(cur)) openFound++;
+    i++;
+  }
+  return out;
+}
+
+function slotsForDate(){
+  // 15 min increments across two opening windows
+  const slots = [];
+  const push = (h,m) => slots.push(pad(h)+":"+pad(m));
+  for(let h=8; h<13; h++){
+    for(let m of [0,15,30,45]){
+      if(h===8 && (m===0 || m===15)) continue; // opens 8:30
+      if(h===12 && m===45) continue; // closes 12:30
+      if(h===12 && m===30) continue; // last start leaves no room before close
+      push(h,m);
+    }
+  }
+  for(let h=15; h<19; h++){
+    for(let m of [0,15,30,45]){
+      push(h,m);
+    }
+  }
+  return slots;
+}
+
+function slotToMinutes(s){
+  const [h,m] = s.split(":").map(Number);
+  return h*60+m;
+}
+function minutesToSlot(min){
+  const h = Math.floor(min/60), m = min%60;
+  return pad(h)+":"+pad(m);
+}
+
+function slotsOccupiedBy(startSlot, durMin){
+  const startMin = slotToMinutes(startSlot);
+  const count = Math.ceil(durMin/15);
+  const out = [];
+  for(let i=0;i<count;i++){
+    out.push(minutesToSlot(startMin + i*15));
+  }
+  return out;
+}
+
+// Closing boundaries, with a 30-minute grace margin for the last booking of each window
+const MORNING_START = 8*60+30;   // 8:30
+const MORNING_CLOSE = 12*60+30;  // 12:30
+const MORNING_CLOSE_GRACE = MORNING_CLOSE + 30; // 13:00
+const EVENING_START = 15*60;     // 15:00
+const EVENING_CLOSE = 19*60;     // 19:00
+const EVENING_CLOSE_GRACE = EVENING_CLOSE + 30; // 19:30
+
+// Se dateStr è la data di oggi, controlla che lo slot non sia già passato
+// rispetto all'orario attuale del dispositivo.
+function isPastSlot(dateStr, startSlot){
+  const now = new Date();
+  const todayKey = dateKey(now);
+  if(dateStr !== todayKey) return false;
+  const nowMin = now.getHours()*60 + now.getMinutes();
+  return slotToMinutes(startSlot) <= nowMin;
+}
+
+function canFit(dateStr, startSlot, durMin){
+  if(isPastSlot(dateStr, startSlot)) return false;
+
+  const startMin = slotToMinutes(startSlot);
+  const endMin = startMin + durMin;
+
+  // Must start within a valid opening window, and finish within that
+  // window's closing time plus a 30-minute grace margin.
+  let windowCloseGrace;
+  if(startMin >= MORNING_START && startMin < MORNING_CLOSE){
+    windowCloseGrace = MORNING_CLOSE_GRACE;
+  } else if(startMin >= EVENING_START && startMin < EVENING_CLOSE){
+    windowCloseGrace = EVENING_CLOSE_GRACE;
+  } else {
+    return false;
+  }
+  if(endMin > windowCloseGrace) return false;
+
+  // Must not overlap any existing booking that day.
+  // Each booking blocks a whole number of 15-minute grid slots: the
+  // duration is rounded down to the nearest 15 minutes, with a 15-minute
+  // minimum (so even a 5-min service always blocks at least one slot).
+  const dayBookings = state.bookings.filter(b => b.date === dateStr);
+  for(const b of dayBookings){
+    const svc = ALL_SERVICES.find(s=>s.id===b.serviceId);
+    const bStart = slotToMinutes(b.time);
+    const bDur = svc ? svc.dur : 30;
+    const blockedMin = Math.max(15, Math.floor(bDur/15)*15);
+    const bEndRounded = bStart + blockedMin;
+    if(startMin < bEndRounded && endMin > bStart) return false;
+  }
+  return true;
+}
+
+/* ================= PERSISTENZA (database condiviso via Netlify Function) ================= */
+const API_URL = "/api/bookings";
+const STORAGE_KEY = "hairevolution_beta_bookings"; // fallback offline locale
+
+function saveBookingsLocal(){
+  try {
+    localStorage.setItem(STORAGE_KEY, JSON.stringify(state.bookings));
+  } catch(e) {
+    console.warn("Impossibile salvare localmente:", e);
+  }
+}
+
+function loadBookingsLocal(){
+  try {
+    const raw = localStorage.getItem(STORAGE_KEY);
+    return raw ? JSON.parse(raw) : [];
+  } catch(e) {
+    return [];
+  }
+}
+
+// Carica le prenotazioni dal database condiviso. Se il server non risponde
+// (es. app aperta come semplice file locale, senza Netlify Functions attive),
+// usa la copia salvata localmente come rete di sicurezza.
+async function fetchBookings(){
+  try {
+    const res = await fetch(API_URL, { method: "GET" });
+    if(!res.ok) throw new Error("risposta non ok");
+    const data = await res.json();
+    state.bookings = data.bookings || [];
+    saveBookingsLocal();
+    state.offlineMode = false;
+  } catch(e) {
+    console.warn("Database non disponibile, uso la copia locale:", e);
+    state.bookings = loadBookingsLocal();
+    state.offlineMode = true;
+  }
+  render();
+}
+
+// Aggiunge una prenotazione al database condiviso. Ritorna true se riuscito.
+async function pushBooking(booking){
+  try {
+    const res = await fetch(API_URL, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(booking),
+    });
+    if(!res.ok) throw new Error("risposta non ok");
+    const data = await res.json();
+    state.bookings = data.bookings || [];
+    saveBookingsLocal();
+    return true;
+  } catch(e) {
+    console.warn("Impossibile salvare sul database condiviso, salvo solo in locale:", e);
+    state.bookings.push({ ...booking, id: "bk_"+Date.now(), seenByOwner:false, createdAt: new Date().toISOString() });
+    saveBookingsLocal();
+    return false;
+  }
+}
+
+// Sovrascrive l'intera lista sul database condiviso (usato per "azzera tutto"
+// e per segnare le prenotazioni come viste dal titolare).
+async function syncBookings(){
+  saveBookingsLocal();
+  try {
+    await fetch(API_URL, {
+      method: "PUT",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ bookings: state.bookings }),
+    });
+  } catch(e) {
+    console.warn("Impossibile sincronizzare col database condiviso:", e);
+  }
+}
+
+/* ---- Pause giornaliere (mattina/pomeriggio), a discrezione del titolare ---- */
+const BREAKS_API_URL = "/api/breaks";
+const BREAKS_STORAGE_KEY = "hairevolution_beta_breaks";
+
+const DEFAULT_BREAKS = {
+  morning: { enabled: false, start: "12:00", end: "12:15" },
+  afternoon: { enabled: false, start: "17:00", end: "17:15" },
+};
+
+function saveBreaksLocal(){
+  try {
+    localStorage.setItem(BREAKS_STORAGE_KEY, JSON.stringify(state.breaks));
+  } catch(e) {
+    console.warn("Impossibile salvare le pause localmente:", e);
+  }
+}
+
+function loadBreaksLocal(){
+  try {
+    const raw = localStorage.getItem(BREAKS_STORAGE_KEY);
+    return raw ? JSON.parse(raw) : DEFAULT_BREAKS;
+  } catch(e) {
+    return DEFAULT_BREAKS;
+  }
+}
+
+async function fetchBreaks(){
+  try {
+    const res = await fetch(BREAKS_API_URL, { method: "GET" });
+    if(!res.ok) throw new Error("risposta non ok");
+    const data = await res.json();
+    state.breaks = data.breaks || DEFAULT_BREAKS;
+    saveBreaksLocal();
+  } catch(e) {
+    console.warn("Pause: database non disponibile, uso la copia locale:", e);
+    state.breaks = loadBreaksLocal();
+  }
+  render();
+}
+
+async function syncBreaks(){
+  saveBreaksLocal();
+  try {
+    await fetch(BREAKS_API_URL, {
+      method: "PUT",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ breaks: state.breaks }),
+    });
+  } catch(e) {
+    console.warn("Impossibile sincronizzare le pause col database condiviso:", e);
+  }
+}
+
+// Controlla se un dato slot (HH:MM) cade dentro una pausa attiva.
+function isSlotOnBreak(slot){
+  const min = slotToMinutes(slot);
+  for(const key of ["morning","afternoon"]){
+    const b = state.breaks[key];
+    if(b && b.enabled){
+      const bStart = slotToMinutes(b.start);
+      const bEnd = slotToMinutes(b.end);
+      if(min >= bStart && min < bEnd) return true;
+    }
+  }
+  return false;
+}
+
+/* ---- Rubrica clienti (automatica dalle prenotazioni + aggiunti a mano) ---- */
+const CONTACTS_API_URL = "/api/contacts";
+const CONTACTS_STORAGE_KEY = "hairevolution_beta_contacts";
+
+function saveContactsLocal(){
+  try {
+    localStorage.setItem(CONTACTS_STORAGE_KEY, JSON.stringify(state.manualContacts));
+  } catch(e) {
+    console.warn("Impossibile salvare i contatti localmente:", e);
+  }
+}
+
+function loadContactsLocal(){
+  try {
+    const raw = localStorage.getItem(CONTACTS_STORAGE_KEY);
+    return raw ? JSON.parse(raw) : [];
+  } catch(e) {
+    return [];
+  }
+}
+
+async function fetchContacts(){
+  try {
+    const res = await fetch(CONTACTS_API_URL, { method: "GET" });
+    if(!res.ok) throw new Error("risposta non ok");
+    const data = await res.json();
+    state.manualContacts = data.contacts || [];
+    saveContactsLocal();
+  } catch(e) {
+    console.warn("Contatti: database non disponibile, uso la copia locale:", e);
+    state.manualContacts = loadContactsLocal();
+  }
+  render();
+}
+
+async function addManualContact(name, phone){
+  try {
+    const res = await fetch(CONTACTS_API_URL, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ name, phone }),
+    });
+    if(!res.ok) throw new Error("risposta non ok");
+    const data = await res.json();
+    state.manualContacts = data.contacts || [];
+    saveContactsLocal();
+    return true;
+  } catch(e) {
+    console.warn("Impossibile salvare il contatto sul database condiviso, salvo solo in locale:", e);
+    state.manualContacts.push({ id:"ct_"+Date.now(), name, phone });
+    saveContactsLocal();
+    return false;
+  }
+}
+
+// Combina i clienti derivati dalle prenotazioni (con conteggio visite e
+// ultima data) con quelli aggiunti manualmente dal titolare, deduplicando
+// per numero di telefono.
+function getCombinedContacts(){
+  const map = new Map();
+  const sorted = [...state.bookings].sort((a,b)=> (a.date+a.time).localeCompare(b.date+b.time));
+  sorted.forEach(b=>{
+    const key = toWhatsappNumber(b.phone);
+    const existing = map.get(key);
+    if(existing){
+      existing.visits += 1;
+      if(b.date > existing.lastDate) existing.lastDate = b.date;
+    } else {
+      map.set(key, { name:b.name, phone:b.phone, visits:1, lastDate:b.date, fromBooking:true });
+    }
+  });
+  state.manualContacts.forEach(c=>{
+    const key = toWhatsappNumber(c.phone);
+    if(!map.has(key)){
+      map.set(key, { name:c.name, phone:c.phone, visits:0, lastDate:null, fromBooking:false });
+    }
+  });
+  return Array.from(map.values()).sort((a,b)=> (b.lastDate||"").localeCompare(a.lastDate||""));
+}
+
+/* ---- Tracciamento inviti (data ultimo "Invita" premuto per contatto) ---- */
+const INVITED_API_URL = "/api/invited";
+const INVITED_STORAGE_KEY = "hairevolution_beta_invited";
+
+function saveInvitedLocal(){
+  try {
+    localStorage.setItem(INVITED_STORAGE_KEY, JSON.stringify(state.invitedLog));
+  } catch(e) {
+    console.warn("Impossibile salvare gli inviti localmente:", e);
+  }
+}
+
+function loadInvitedLocal(){
+  try {
+    const raw = localStorage.getItem(INVITED_STORAGE_KEY);
+    return raw ? JSON.parse(raw) : {};
+  } catch(e) {
+    return {};
+  }
+}
+
+async function fetchInvited(){
+  try {
+    const res = await fetch(INVITED_API_URL, { method: "GET" });
+    if(!res.ok) throw new Error("risposta non ok");
+    const data = await res.json();
+    state.invitedLog = data.invited || {};
+    saveInvitedLocal();
+  } catch(e) {
+    console.warn("Inviti: database non disponibile, uso la copia locale:", e);
+    state.invitedLog = loadInvitedLocal();
+  }
+  render();
+}
+
+async function markInvited(phone){
+  const key = toWhatsappNumber(phone);
+  state.invitedLog[key] = dateKey(new Date());
+  saveInvitedLocal();
+  try {
+    await fetch(INVITED_API_URL, {
+      method: "PUT",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ invited: state.invitedLog }),
+    });
+  } catch(e) {
+    console.warn("Impossibile sincronizzare gli inviti col database condiviso:", e);
+  }
+}
+
+/* ================= INIT ================= */
+const days = nextDays(14);
+const firstOpenDay = days.find(d => !isClosedDate(d));
+state.selectedDate = dateKey(firstOpenDay || days[0]);
+state.bookings = loadBookingsLocal(); // mostra subito la copia locale, poi aggiorna dal server
+state.breaks = loadBreaksLocal();
+state.manualContacts = loadContactsLocal();
+state.invitedLog = loadInvitedLocal();
+
+/* ================= RENDER ================= */
+function render(){
+  const app = document.getElementById("app");
+  app.innerHTML = "";
+
+  const header = renderHeader();
+  app.appendChild(header);
+
+  const main = document.createElement("main");
+  main.id = "main";
+
+  if(state.view === "cliente"){
+    renderClientView(main);
+  } else {
+    renderOwnerView(main);
+  }
+  app.appendChild(main);
+
+  const footer = document.createElement("div");
+  footer.className = "app-footer";
+  footer.innerHTML = `© 2026 BarberApp by ML Tutti i diritti riservati<br><span class="version-tag${state.view==='titolare' ? ' clickable':''}" id="versionTag">v${APP_VERSION} — aggiornata al ${APP_VERSION_DATE}</span>`;
+  app.appendChild(footer);
+  if(state.view==='titolare'){
+    footer.querySelector("#versionTag").onclick = () => { state.showChangelog = true; render(); };
+  }
+
+  if(state.showForm){
+    app.appendChild(renderBookingSheet());
+  }
+
+  if(state.showChangelog){
+    app.appendChild(renderChangelogSheet());
+  }
+
+  if(state.showAddContact){
+    app.appendChild(renderAddContactSheet());
+  }
+
+  if(state.toast){
+    const t = document.createElement("div");
+    t.className = "toast";
+    t.textContent = state.toast;
+    app.appendChild(t);
+  }
+}
+
+function renderHeader(){
+  const header = document.createElement("header");
+  header.innerHTML = `
+    <div class="brand">
+      <h1>HairEvolution<span class="beta-badge">BETA</span></h1>
+      <div class="slogan">l'artigiano dei capelli</div>
+      <div class="meta">${SHOP.owner} &nbsp;·&nbsp; ${SHOP.phoneDisplay}</div>
+      <div class="meta">${SHOP.hours} &nbsp;·&nbsp; ${SHOP.closedDaysLabel}</div>
+    </div>
+    <div class="beta-banner">🧪 Versione di TEST — i dati non vengono salvati. ⚠️ Il pulsante WhatsApp è REALE: invia davvero un messaggio al negozio.</div>
+    <div class="gold-rule"></div>
+    <div class="segmented" id="segmented">
+      <button data-v="cliente" class="${state.view==='cliente'?'active':''}">Cliente</button>
+      <button data-v="titolare" class="${state.view==='titolare'?'active':''}">Titolare ${unseenCount()>0 ? '· '+unseenCount() : ''}</button>
+    </div>
+  `;
+  header.querySelectorAll("#segmented button").forEach(btn=>{
+    btn.onclick = () => {
+      state.view = btn.dataset.v;
+      state.selectedSlot = null;
+      render();
+    };
+  });
+  return header;
+}
+
+function unseenCount(){
+  return state.bookings.filter(b=>!b.seenByOwner).length;
+}
+
+/* ---------- CLIENT VIEW ---------- */
+function renderClientView(main){
+  // Date picker
+  const dateSection = document.createElement("div");
+  dateSection.innerHTML = `<div class="section-label">SCEGLI IL GIORNO</div>`;
+  const dateRow = document.createElement("div");
+  dateRow.className = "date-row";
+  days.forEach(d=>{
+    const key = dateKey(d);
+    const closed = isClosedDate(d);
+    const chip = document.createElement("div");
+    chip.className = "date-chip"
+      + (state.selectedDate===key ? " active":"")
+      + (closed ? " closed":"");
+    chip.innerHTML = `<div class="dow">${DOW[d.getDay()]}</div><div class="dnum">${d.getDate()}</div>${closed ? '<div class="dclosed">chiuso</div>' : ''}`;
+    if(!closed){
+      chip.onclick = () => { state.selectedDate = key; state.selectedSlot=null; render(); };
+    }
+    dateRow.appendChild(chip);
+  });
+  dateSection.appendChild(dateRow);
+  main.appendChild(dateSection);
+
+  // Services
+  const svcSection = document.createElement("div");
+  svcSection.innerHTML = `<div class="section-label">SCEGLI IL SERVIZIO</div>`;
+  const tabs = document.createElement("div");
+  tabs.className = "cat-tabs";
+  CATEGORIES.forEach(cat=>{
+    const tab = document.createElement("div");
+    tab.className = "cat-tab" + (state.activeCat===cat.key ? " active":"");
+    tab.textContent = cat.label;
+    tab.onclick = () => {
+      state.activeCat = cat.key;
+      state.selectedService = null;
+      state.selectedSlot = null;
+      render();
+    };
+    tabs.appendChild(tab);
+  });
+  svcSection.appendChild(tabs);
+
+  const list = document.createElement("div");
+  list.className = "service-list";
+  const cat = CATEGORIES.find(c=>c.key===state.activeCat);
+  cat.services.forEach(s=>{
+    const item = document.createElement("div");
+    item.className = "service-item" + (state.selectedService===s.id ? " selected":"");
+    item.innerHTML = `
+      <div>
+        <div class="s-name">${s.name}</div>
+        <div class="s-dur">${s.dur} min</div>
+      </div>
+      <div class="s-price">${fmtEUR(s.price)}</div>
+    `;
+    item.onclick = () => { state.selectedService = s.id; state.selectedSlot=null; render(); };
+    list.appendChild(item);
+  });
+  svcSection.appendChild(list);
+  main.appendChild(svcSection);
+
+  // Time slots
+  const timeSection = document.createElement("div");
+  timeSection.innerHTML = `<div class="section-label">ORARI DISPONIBILI</div>`;
+
+  const dObj = days.find(d=>dateKey(d)===state.selectedDate);
+  if(isClosedDate(dObj)){
+    timeSection.innerHTML += `<div class="closed-note">Negozio chiuso in questo giorno.</div>`;
+  } else if(!state.selectedService){
+    timeSection.innerHTML += `<div class="empty-note">Seleziona prima un servizio per vedere gli orari disponibili.</div>`;
+  } else {
+    const svc = ALL_SERVICES.find(s=>s.id===state.selectedService);
+    const allSlots = slotsForDate();
+    const morningSlots = allSlots.filter(s => slotToMinutes(s) < 13*60);
+    const afternoonSlots = allSlots.filter(s => slotToMinutes(s) >= 13*60);
+
+    const buildGrid = (slotList) => {
+      const grid = document.createElement("div");
+      grid.className = "slot-grid";
+      slotList.forEach(slot=>{
+        const onBreak = isSlotOnBreak(slot);
+        const fits = canFit(state.selectedDate, slot, svc.dur) && !onBreak;
+        const busy = !fits;
+        const el = document.createElement("div");
+        let cls = "free";
+        if(state.selectedSlot===slot) cls = "picked";
+        else if(onBreak) cls = "pausa";
+        else if(busy) cls = "busy";
+        el.className = "slot " + cls;
+        el.textContent = onBreak ? "Pausa" : slot;
+        if(!busy){
+          el.onclick = () => { state.selectedSlot = slot; render(); };
+        }
+        grid.appendChild(el);
+      });
+      return grid;
+    };
+
+    const subLabel = document.createElement("div");
+    subLabel.className = "time-sublabel";
+    subLabel.textContent = "Mattina";
+    timeSection.appendChild(subLabel);
+    timeSection.appendChild(buildGrid(morningSlots));
+
+    const subLabel2 = document.createElement("div");
+    subLabel2.className = "time-sublabel";
+    subLabel2.textContent = "Pomeriggio";
+    timeSection.appendChild(subLabel2);
+    timeSection.appendChild(buildGrid(afternoonSlots));
+
+    const legend = document.createElement("div");
+    legend.className = "legend";
+    legend.innerHTML = `<span><i class="dot free"></i>Libero</span><span><i class="dot busy"></i>Occupato</span><span><i class="dot pausa"></i>Pausa</span>`;
+    timeSection.appendChild(legend);
+  }
+  main.appendChild(timeSection);
+
+  // Summary bar
+  const svc = ALL_SERVICES.find(s=>s.id===state.selectedService);
+  const bar = document.createElement("div");
+  bar.className = "summary-bar";
+  const canBook = svc && state.selectedSlot;
+  bar.innerHTML = `
+    <div class="sum-text">
+      ${svc ? `<b>${svc.name}</b><br>${fmtEUR(svc.price)} · ${svc.dur} min` : "Nessun servizio selezionato"}
+      ${state.selectedSlot ? `<br>${formatDateLong(dObj)} ore <b>${state.selectedSlot}</b>` : ""}
+    </div>
+    <button class="btn-primary" id="bookBtn" ${canBook?"":"disabled"}>Prenota</button>
+  `;
+  main.appendChild(bar);
+  const bookBtn = bar.querySelector("#bookBtn");
+  if(bookBtn){
+    bookBtn.onclick = () => { state.showForm = true; render(); };
+  }
+}
+
+function formatDateLong(d){
+  return d.getDate()+" "+MONTHS[d.getMonth()];
+}
+
+function toWhatsappNumber(phone){
+  // Normalizes an Italian phone number into the digits-only international
+  // format wa.me expects, avoiding a duplicated "39" prefix if the client
+  // already typed it (with or without a leading "+" or "00").
+  let d = (phone || "").replace(/[^\d]/g, "");
+  if(d.startsWith("0039")) d = d.slice(2);
+  if(d.startsWith("39")) return d;
+  if(d.startsWith("0")) d = d.slice(1);
+  return "39" + d;
+}
+
+function renderBookingSheet(){
+  const overlay = document.createElement("div");
+  overlay.className = "sheet-overlay";
+  overlay.onclick = (e) => { if(e.target===overlay){ state.showForm=false; render(); } };
+
+  const svc = ALL_SERVICES.find(s=>s.id===state.selectedService);
+  const dObj = days.find(d=>dateKey(d)===state.selectedDate);
+
+  const sheet = document.createElement("div");
+  sheet.className = "sheet";
+  sheet.innerHTML = `
+    <h3>I tuoi dati</h3>
+    <div class="sheet-sub">${svc.name} · ${formatDateLong(dObj)} ore ${state.selectedSlot}</div>
+    <div class="field">
+      <label>Nome e cognome</label>
+      <input id="fName" type="text" placeholder="Es. Luca Bianchi" value="${state.formName}" />
+    </div>
+    <div class="field">
+      <label>Numero di telefono</label>
+      <input id="fPhone" type="tel" placeholder="Es. 333 1234567" value="${state.formPhone}" />
+    </div>
+    <div class="privacy-note">
+      I tuoi dati (nome e telefono) vengono usati solo per gestire questa prenotazione e per essere ricontattato dal negozio. Non vengono condivisi con terzi.
+    </div>
+    <label class="privacy-check">
+      <input type="checkbox" id="privacyCheck" />
+      <span>Ho letto l'informativa e acconsento al trattamento dei miei dati per la prenotazione</span>
+    </label>
+    <div class="sheet-actions">
+      <button class="btn-secondary" id="cancelBtn">Annulla</button>
+      <button class="btn-primary" id="confirmBtn" style="flex:1;">Conferma prenotazione</button>
+    </div>
+  `;
+  overlay.appendChild(sheet);
+
+  sheet.querySelector("#cancelBtn").onclick = () => { state.showForm=false; render(); };
+  sheet.querySelector("#confirmBtn").onclick = async () => {
+    const name = sheet.querySelector("#fName").value.trim();
+    const phone = sheet.querySelector("#fPhone").value.trim();
+    const privacyOk = sheet.querySelector("#privacyCheck").checked;
+    if(!name || !phone){
+      flashToast("Inserisci nome e telefono");
+      return;
+    }
+    if(!privacyOk){
+      flashToast("Devi accettare l'informativa privacy per prenotare");
+      return;
+    }
+    const confirmBtn = sheet.querySelector("#confirmBtn");
+    confirmBtn.disabled = true;
+    confirmBtn.textContent = "Invio in corso...";
+
+    const bookingDraft = {
+      date: state.selectedDate,
+      time: state.selectedSlot,
+      serviceId: state.selectedService,
+      name, phone,
+    };
+    const ok = await pushBooking(bookingDraft);
+    const booking = state.bookings[state.bookings.length - 1];
+
+    state.lastBooking = booking;
+    state.showForm = false;
+    state.showConfirmScreen = true;
+    state.formName = ""; state.formPhone = "";
+    state.selectedSlot = null;
+    state.selectedService = null;
+    state.view = "cliente";
+    if(!ok){
+      flashToast("⚠️ Salvata solo su questo dispositivo (database non raggiungibile)");
+    }
+    renderConfirmOverlay(booking);
+  };
+
+  return overlay;
+}
+
+function renderConfirmOverlay(booking){
+  const svc = ALL_SERVICES.find(s=>s.id===booking.serviceId);
+  const dObj = days.find(d=>dateKey(d)===booking.date);
+
+  render(); // redraw base (form closed)
+
+  const app = document.getElementById("app");
+  const overlay = document.createElement("div");
+  overlay.className = "sheet-overlay";
+  const sheet = document.createElement("div");
+  sheet.className = "sheet";
+  sheet.innerHTML = `
+    <div class="confirm-screen">
+      <div class="confirm-icon">✓</div>
+      <h3>Prenotazione confermata</h3>
+      <div class="confirm-detail">
+        <div><b>${svc.name}</b></div>
+        <div>${formatDateLong(dObj)} ore <b>${booking.time}</b></div>
+        <div>${fmtEUR(svc.price)} · ${svc.dur} min</div>
+        <div>${booking.name} · ${booking.phone}</div>
+      </div>
+      <div class="reminder-list">
+        <div>📩 Promemoria inviato ora, alla prenotazione</div>
+        <div>📅 Promemoria previsto il giorno dell'appuntamento</div>
+        <div>⏰ Promemoria previsto 1 ora prima</div>
+      </div>
+      <a class="wa-btn" id="waBtn" target="_blank" rel="noopener">Invia conferma su WhatsApp al negozio</a>
+      <button class="link-btn" id="closeConfirm">Chiudi</button>
+    </div>
+  `;
+  overlay.appendChild(sheet);
+  app.appendChild(overlay);
+
+  const msg = encodeURIComponent(
+    `Ciao! Ho prenotato: ${svc.name} il ${formatDateLong(dObj)} alle ${booking.time}. Nome: ${booking.name}, Tel: ${booking.phone}`
+  );
+  sheet.querySelector("#waBtn").href = `https://wa.me/${SHOP.ownerPhone}?text=${msg}`;
+
+  sheet.querySelector("#closeConfirm").onclick = () => {
+    overlay.remove();
+    flashToast("📲 Notifica inviata al titolare");
+  };
+}
+
+function flashToast(msg){
+  state.toast = msg;
+  render();
+  setTimeout(()=>{ state.toast = null; render(); }, 2200);
+}
+
+/* ---------- OWNER VIEW ---------- */
+function renderBreaksSection(){
+  const wrap = document.createElement("div");
+  wrap.className = "breaks-section";
+
+  const label = document.createElement("div");
+  label.className = "section-label";
+  label.textContent = "GESTISCI PAUSE";
+  wrap.appendChild(label);
+
+  const buildRow = (key, title) => {
+    const b = state.breaks[key];
+    const row = document.createElement("div");
+    row.className = "break-row";
+    row.innerHTML = `
+      <div class="break-row-top">
+        <span class="break-title">${title}</span>
+        <label class="break-toggle">
+          <input type="checkbox" id="breakToggle_${key}" ${b.enabled ? "checked" : ""} />
+          <span class="break-toggle-slider"></span>
+        </label>
+      </div>
+      <div class="break-times" style="${b.enabled ? "" : "display:none;"}">
+        <input type="time" id="breakStart_${key}" value="${b.start}" />
+        <span>—</span>
+        <input type="time" id="breakEnd_${key}" value="${b.end}" />
+      </div>
+    `;
+
+    const toggle = row.querySelector(`#breakToggle_${key}`);
+    const timesDiv = row.querySelector(".break-times");
+    const startInput = row.querySelector(`#breakStart_${key}`);
+    const endInput = row.querySelector(`#breakEnd_${key}`);
+
+    const commit = async () => {
+      state.breaks[key] = {
+        enabled: toggle.checked,
+        start: startInput.value || b.start,
+        end: endInput.value || b.end,
+      };
+      await syncBreaks();
+      render();
+    };
+
+    toggle.onchange = () => {
+      timesDiv.style.display = toggle.checked ? "" : "none";
+      commit();
+    };
+    startInput.onchange = commit;
+    endInput.onchange = commit;
+
+    return row;
+  };
+
+  wrap.appendChild(buildRow("morning", "Pausa mattina"));
+  wrap.appendChild(buildRow("afternoon", "Pausa pomeriggio"));
+
+  return wrap;
+}
+
+function formatDateShort(dateStr){
+  if(!dateStr) return "";
+  const d = new Date(dateStr+"T00:00:00");
+  return d.getDate()+" "+MONTHS[d.getMonth()];
+}
+
+function formatCreatedAt(iso){
+  if(!iso) return "";
+  const d = new Date(iso);
+  if(isNaN(d.getTime())) return "";
+  const h = pad(d.getHours()), m = pad(d.getMinutes());
+  return d.getDate()+" "+MONTHS[d.getMonth()]+" alle "+h+":"+m;
+}
+
+function renderRubricaSection(){
+  const wrap = document.createElement("div");
+  wrap.className = "rubrica-section";
+
+  const labelRow = document.createElement("div");
+  labelRow.style.display = "flex";
+  labelRow.style.justifyContent = "space-between";
+  labelRow.style.alignItems = "center";
+  labelRow.innerHTML = `<div class="section-label" style="margin:22px 0 12px 0;">RUBRICA CLIENTI</div>`;
+  const addBtn = document.createElement("button");
+  addBtn.className = "link-btn";
+  addBtn.textContent = "+ Aggiungi cliente";
+  addBtn.onclick = () => { state.showAddContact = true; render(); };
+  labelRow.appendChild(addBtn);
+  wrap.appendChild(labelRow);
+
+  const contacts = getCombinedContacts();
+
+  if(contacts.length === 0){
+    const empty = document.createElement("div");
+    empty.className = "empty-note";
+    empty.textContent = "Nessun cliente in rubrica ancora. I clienti che prenotano vengono aggiunti qui automaticamente, oppure puoi aggiungerne uno a mano.";
+    wrap.appendChild(empty);
+    return wrap;
+  }
+
+  contacts.forEach(c=>{
+    const row = document.createElement("div");
+    row.className = "contact-row";
+    const subtitle = c.fromBooking
+      ? `${c.visits} ${c.visits===1?'visita':'visite'} · ultima: ${formatDateShort(c.lastDate)}`
+      : "Non ha ancora prenotato";
+    const invitedKey = toWhatsappNumber(c.phone);
+    const invitedDate = state.invitedLog[invitedKey];
+    const invitedLine = invitedDate ? `<div class="contact-invited">✅ Invitato il ${formatDateShort(invitedDate)}</div>` : "";
+    const inviteMsg = encodeURIComponent(`Ciao ${c.name}! Ti va di prenotare il tuo prossimo appuntamento da HairEvolution? Puoi farlo comodamente qui: ${SHOP.bookingLink}`);
+    row.innerHTML = `
+      <div>
+        <div class="contact-name">${c.name}</div>
+        <div class="contact-sub">${subtitle}</div>
+        ${invitedLine}
+      </div>
+      <a class="icon-btn" target="_blank" rel="noopener" href="https://wa.me/${invitedKey}?text=${inviteMsg}">${invitedDate ? "Invita di nuovo" : "Invita"}</a>
+    `;
+    row.querySelector("a.icon-btn").addEventListener("click", () => {
+      markInvited(c.phone);
+    });
+    wrap.appendChild(row);
+  });
+
+  return wrap;
+}
+
+function renderAddContactSheet(){
+  const overlay = document.createElement("div");
+  overlay.className = "sheet-overlay";
+  overlay.onclick = (e) => { if(e.target===overlay){ state.showAddContact=false; render(); } };
+
+  const sheet = document.createElement("div");
+  sheet.className = "sheet";
+  sheet.innerHTML = `
+    <h3>Aggiungi cliente</h3>
+    <div class="sheet-sub">Per invitarlo a prenotare, anche se non ha mai usato l'app prima</div>
+    <div class="field">
+      <label>Nome e cognome</label>
+      <input id="ctName" type="text" placeholder="Es. Luca Bianchi" />
+    </div>
+    <div class="field">
+      <label>Numero di telefono</label>
+      <input id="ctPhone" type="tel" placeholder="Es. 333 1234567" />
+    </div>
+    <div class="sheet-actions">
+      <button class="btn-secondary" id="ctCancel">Annulla</button>
+      <button class="btn-primary" id="ctConfirm" style="flex:1;">Aggiungi</button>
+    </div>
+  `;
+  overlay.appendChild(sheet);
+
+  sheet.querySelector("#ctCancel").onclick = () => { state.showAddContact=false; render(); };
+  sheet.querySelector("#ctConfirm").onclick = async () => {
+    const name = sheet.querySelector("#ctName").value.trim();
+    const phone = sheet.querySelector("#ctPhone").value.trim();
+    if(!name || !phone){
+      flashToast("Inserisci nome e telefono");
+      return;
+    }
+    const confirmBtn = sheet.querySelector("#ctConfirm");
+    confirmBtn.disabled = true;
+    confirmBtn.textContent = "Aggiungo...";
+    await addManualContact(name, phone);
+    state.showAddContact = false;
+    render();
+    flashToast("Cliente aggiunto alla rubrica");
+  };
+
+  return overlay;
+}
+
+function renderOwnerView(main){
+  if(!state.ownerUnlocked){
+    renderPinScreen(main);
+    return;
+  }
+
+  // mark all as seen once owner opens the dashboard
+  const hadUnseen = unseenCount() > 0;
+
+  const stats = document.createElement("div");
+  stats.className = "owner-stats";
+  const todayKey = dateKey(new Date());
+  const todayCount = state.bookings.filter(b=>b.date===todayKey).length;
+  const totalCount = state.bookings.length;
+  const todayRevenue = state.bookings.filter(b=>b.date===todayKey)
+    .reduce((sum,b)=>{ const s=ALL_SERVICES.find(x=>x.id===b.serviceId); return sum + (s?s.price:0); },0);
+  stats.innerHTML = `
+    <div class="stat-card"><div class="stat-num">${todayCount}</div><div class="stat-label">OGGI</div></div>
+    <div class="stat-card"><div class="stat-num">${totalCount}</div><div class="stat-label">TOTALI</div></div>
+    <div class="stat-card"><div class="stat-num">${fmtEUR(todayRevenue)}</div><div class="stat-label">INCASSO OGGI</div></div>
+  `;
+  main.appendChild(stats);
+
+  main.appendChild(renderBreaksSection());
+  main.appendChild(renderRubricaSection());
+
+  const label = document.createElement("div");
+  label.className = "section-label";
+  label.textContent = "PRENOTAZIONI";
+  main.appendChild(label);
+
+  if(state.bookings.length===0){
+    const empty = document.createElement("div");
+    empty.className = "empty-state";
+    empty.innerHTML = `<div class="e-icon">🗓️</div>Nessuna prenotazione ancora.<br>Le nuove prenotazioni dei clienti<br>appariranno qui in tempo reale.`;
+    main.appendChild(empty);
+  } else {
+    const sorted = [...state.bookings].sort((a,b)=> (a.date+a.time).localeCompare(b.date+b.time));
+    sorted.forEach(b=>{
+      const svc = ALL_SERVICES.find(s=>s.id===b.serviceId);
+      const dObj = new Date(b.date+"T00:00:00");
+      const card = document.createElement("div");
+      card.className = "booking-card" + (!b.seenByOwner ? " new" : "");
+      card.innerHTML = `
+        <div class="b-top">
+          <div>
+            <div class="b-date">${DOW[dObj.getDay()]} ${formatDateLong(dObj)}</div>
+            <div class="b-time">${b.time}</div>
+          </div>
+          ${!b.seenByOwner ? '<div class="badge-new">NUOVA</div>' : ''}
+        </div>
+        <div class="b-service">${svc.name} · ${fmtEUR(svc.price)} · ${svc.dur} min</div>
+        ${b.createdAt ? `<div class="b-created">Prenotato il ${formatCreatedAt(b.createdAt)}</div>` : ''}
+        <div class="b-client">
+          <div>
+            <div class="b-name">${b.name}</div>
+            <div class="b-phone">${b.phone}</div>
+          </div>
+          <a class="icon-btn" target="_blank" rel="noopener" href="${'https://wa.me/'+toWhatsappNumber(b.phone)+'?text='+encodeURIComponent('Ciao '+b.name+'! Ti confermiamo la prenotazione per '+svc.name+' il '+formatDateLong(dObj)+' alle '+b.time+' da HairEvolution. Ti aspettiamo!')}">WhatsApp</a>
+        </div>
+      `;
+      main.appendChild(card);
+    });
+  }
+
+  if(hadUnseen){
+    setTimeout(()=>{
+      state.bookings.forEach(b=>b.seenByOwner=true);
+      syncBookings();
+      render();
+    }, 900);
+  }
+
+  if(state.bookings.length > 0){
+    const resetWrap = document.createElement("div");
+    resetWrap.style.textAlign = "center";
+    resetWrap.style.marginTop = "18px";
+    const resetBtn = document.createElement("button");
+    resetBtn.className = "link-btn";
+    resetBtn.textContent = "Azzera tutte le prenotazioni";
+    resetBtn.onclick = async () => {
+      state.bookings = [];
+      await syncBookings();
+      render();
+      flashToast("Prenotazioni azzerate");
+    };
+    resetWrap.appendChild(resetBtn);
+    main.appendChild(resetWrap);
+  }
+
+  const versionWrap = document.createElement("div");
+  versionWrap.style.textAlign = "center";
+  versionWrap.style.marginTop = "10px";
+  const versionBtn = document.createElement("button");
+  versionBtn.className = "link-btn";
+  versionBtn.textContent = `📋 Cronologia versione (v${APP_VERSION})`;
+  versionBtn.onclick = () => { state.showChangelog = true; render(); };
+  versionWrap.appendChild(versionBtn);
+  main.appendChild(versionWrap);
+
+  const devTestWrap = document.createElement("div");
+  devTestWrap.style.textAlign = "center";
+  devTestWrap.style.marginTop = "10px";
+  const devTestBtn = document.createElement("a");
+  devTestBtn.className = "link-btn";
+  devTestBtn.target = "_blank";
+  devTestBtn.rel = "noopener";
+  devTestBtn.textContent = "🧪 Invia messaggio di test (sviluppatore)";
+  devTestBtn.href = `https://wa.me/${SHOP.devPhone}?text=${encodeURIComponent("Test HairEvolution BarberApp v"+APP_VERSION+" — tutto ok!")}`;
+  devTestWrap.appendChild(devTestBtn);
+  main.appendChild(devTestWrap);
+}
+
+function renderChangelogSheet(){
+  const overlay = document.createElement("div");
+  overlay.className = "sheet-overlay";
+  overlay.onclick = (e) => { if(e.target===overlay){ state.showChangelog=false; render(); } };
+
+  const sheet = document.createElement("div");
+  sheet.className = "sheet";
+
+  const summaryHTML = APP_SUMMARY.map(s => `
+    <div class="summary-entry">
+      <div class="summary-title">${s.title}</div>
+      <div class="summary-text">${s.text}</div>
+    </div>
+  `).join("");
+
+  const entriesHTML = CHANGELOG.map(entry => `
+    <div class="changelog-entry">
+      <div class="changelog-version">v${entry.version} <span class="changelog-date">${entry.date}</span></div>
+      ${entry.summary ? `<div class="changelog-summary">${entry.summary}</div>` : ""}
+      <ul class="changelog-list">
+        ${entry.changes.map(c => `<li>${c}</li>`).join("")}
+      </ul>
+    </div>
+  `).join("");
+
+  sheet.innerHTML = `
+    <h3>Cronologia versione</h3>
+    <div class="sheet-sub">Versione attuale: v${APP_VERSION} — aggiornata al ${APP_VERSION_DATE}</div>
+    <div class="changelog-scroll">
+      <div class="section-label" style="margin-top:0;">COME FUNZIONA LA PRENOTAZIONE</div>
+      ${summaryHTML}
+      <div class="section-label">CRONOLOGIA MODIFICHE</div>
+      ${entriesHTML}
+    </div>
+    <div class="sheet-actions">
+      <button class="btn-primary" id="closeChangelog" style="flex:1;">Chiudi</button>
+    </div>
+  `;
+  overlay.appendChild(sheet);
+
+  sheet.querySelector("#closeChangelog").onclick = () => { state.showChangelog=false; render(); };
+
+  return overlay;
+}
+
+function renderPinScreen(main){
+  const wrap = document.createElement("div");
+  wrap.className = "pin-screen";
+  wrap.innerHTML = `
+    <div class="lock">🔒</div>
+    <h3>Area titolare</h3>
+    <p>Accesso riservato — inserisci il PIN per vedere<br>nomi e contatti dei clienti prenotati.</p>
+    <input class="pin-input" id="pinField" type="password" maxlength="4" inputmode="numeric" placeholder="••••" />
+    <div>
+      <button class="btn-primary" id="pinGo">Entra</button>
+    </div>
+    <div class="pin-hint">${state.pinError ? "PIN errato, riprova." : ""}</div>
+  `;
+  main.appendChild(wrap);
+  const field = wrap.querySelector("#pinField");
+  field.focus();
+  const tryUnlock = () => {
+    if(field.value === "2210"){
+      state.ownerUnlocked = true;
+      state.pinError = false;
+    } else {
+      state.pinError = true;
+    }
+    render();
+  };
+  wrap.querySelector("#pinGo").onclick = tryUnlock;
+  field.onkeydown = (e) => { if(e.key==="Enter") tryUnlock(); };
+}
+
+render();
+fetchBookings(); // aggiorna con i dati reali dal database condiviso, appena disponibili
+fetchBreaks();
+fetchContacts();
+fetchInvited();
+</script>
+</body>
+</html>

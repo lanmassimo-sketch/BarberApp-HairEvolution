@@ -895,8 +895,9 @@ const SHOP = {
   ]
 };
 
-const APP_VERSION = "1.27";
-const APP_VERSION_DATE = "22/09/2026";
+const APP_VERSION = "1.28";
+const APP_VERSION_DATE = "26/09/2026";
+const CLIENT_ACCESS_PIN = "1234"; // PIN d'ingresso da dare ai clienti autorizzati a prenotare
 
 const APP_SUMMARY = [
   { title:"Giorni disponibili", text:"L'app mostra i prossimi 14 giorni prenotabili. I giorni chiusi (domenica, lunedì, festività 2026 e la festa patronale del 22 ottobre) restano visibili ma in grigio e non selezionabili." },
@@ -908,6 +909,13 @@ const APP_SUMMARY = [
 ];
 
 const CHANGELOG = [
+  { version:"1.28", date:"26/09/2026",
+    summary:"Aggiunto un PIN d'ingresso generale che protegge l'intera app (non solo la vista Titolare): finché non viene inserito il codice corretto, non si vede nulla — né calendario né prenotazioni. È distinto dal PIN Titolare e serve a limitare l'accesso ai soli clienti a cui il negozio ha dato il codice. Una volta inserito, il dispositivo lo ricorda e non lo richiede più.",
+    changes:[
+    "Aggiunta la costante CLIENT_ACCESS_PIN e lo stato appUnlocked",
+    "Nuova schermata di ingresso che precede l'intera app",
+    "Sblocco salvato in localStorage per non richiedere il PIN ad ogni visita"
+  ]},
   { version:"1.27", date:"22/09/2026",
     summary:"Aggiunta la data e l'ora in cui \u00e8 stata effettuata ogni prenotazione (distinta dall'orario dell'appuntamento). Compare come piccola riga \"Prenotato il...\" nella card della prenotazione, lato Titolare. Le prenotazioni fatte prima di questa versione non hanno questo dato e semplicemente non mostrano la riga.",
     changes:[
@@ -1099,6 +1107,8 @@ const MONTHS = ["gen","feb","mar","apr","mag","giu","lug","ago","set","ott","nov
 
 /* ================= STATE ================= */
 let state = {
+  appUnlocked: localStorage.getItem("he_app_unlocked") === "1",
+  appPinError: false,
   view: "cliente", // cliente | titolare
   ownerUnlocked: false,
   pinInput: "",
@@ -1522,6 +1532,11 @@ state.invitedLog = loadInvitedLocal();
 function render(){
   const app = document.getElementById("app");
   app.innerHTML = "";
+
+  if(!state.appUnlocked){
+    renderAppGateScreen(app);
+    return;
+  }
 
   const header = renderHeader();
   app.appendChild(header);
@@ -2200,6 +2215,36 @@ function renderChangelogSheet(){
   sheet.querySelector("#closeChangelog").onclick = () => { state.showChangelog=false; render(); };
 
   return overlay;
+}
+
+function renderAppGateScreen(app){
+  const wrap = document.createElement("div");
+  wrap.className = "pin-screen";
+  wrap.innerHTML = `
+    <div class="lock">🔒</div>
+    <h3>HairEvolution</h3>
+    <p>Accesso riservato ai clienti invitati.<br>Inserisci il codice che ti ha dato il negozio.</p>
+    <input class="pin-input" id="gateField" type="password" maxlength="4" inputmode="numeric" placeholder="••••" />
+    <div>
+      <button class="btn-primary" id="gateGo">Entra</button>
+    </div>
+    <div class="pin-hint">${state.appPinError ? "Codice errato, riprova." : ""}</div>
+  `;
+  app.appendChild(wrap);
+  const field = wrap.querySelector("#gateField");
+  field.focus();
+  const tryUnlock = () => {
+    if(field.value === CLIENT_ACCESS_PIN){
+      state.appUnlocked = true;
+      state.appPinError = false;
+      localStorage.setItem("he_app_unlocked", "1");
+    } else {
+      state.appPinError = true;
+    }
+    render();
+  };
+  wrap.querySelector("#gateGo").onclick = tryUnlock;
+  field.onkeydown = (e) => { if(e.key==="Enter") tryUnlock(); };
 }
 
 function renderPinScreen(main){

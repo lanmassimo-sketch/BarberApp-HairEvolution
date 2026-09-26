@@ -1,12 +1,13 @@
 // Funzione Cloudflare Pages per HairEvolution BarberApp.
 // Gestisce le pause giornaliere (mattina/pomeriggio) impostate a
-// discrezione del titolare, usando Cloudflare KV.
+// discrezione del titolare, usando Cloudflare KV come database.
 //
 // Endpoint: /api/breaks
 //   GET -> restituisce le pause attuali
 //   PUT -> sovrascrive le pause
 //
 // Richiede lo stesso binding KV usato da bookings.js: HAIREVOLUTION_KV
+// (Settings > Functions > KV namespace bindings).
 
 const KV_KEY = "breaks";
 
@@ -33,7 +34,7 @@ export async function onRequest(context){
 
   const kv = env.HAIREVOLUTION_KV;
   if(!kv){
-    return new Response(JSON.stringify({ error: "KV namespace non collegato. Controlla il binding HAIREVOLUTION_KV." }), { status: 500, headers });
+    return new Response(JSON.stringify({ error: "KV namespace non collegato. Controlla il binding HAIREVOLUTION_KV nelle impostazioni del progetto." }), { status: 500, headers });
   }
 
   try {

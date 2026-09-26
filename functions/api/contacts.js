@@ -8,6 +8,7 @@
 //   PUT  -> sovrascrive l'intera lista (usato per eliminare)
 //
 // Richiede lo stesso binding KV usato da bookings.js: HAIREVOLUTION_KV
+// (Settings > Functions > KV namespace bindings).
 
 const KV_KEY = "contacts";
 
@@ -24,6 +25,10 @@ async function readContacts(kv){
   return Array.isArray(data) ? data : [];
 }
 
+async function writeContacts(kv, contacts){
+  await kv.put(KV_KEY, JSON.stringify(contacts));
+}
+
 export async function onRequest(context){
   const { request, env } = context;
   const headers = { "Content-Type": "application/json", ...corsHeaders() };
@@ -34,7 +39,7 @@ export async function onRequest(context){
 
   const kv = env.HAIREVOLUTION_KV;
   if(!kv){
-    return new Response(JSON.stringify({ error: "KV namespace non collegato. Controlla il binding HAIREVOLUTION_KV." }), { status: 500, headers });
+    return new Response(JSON.stringify({ error: "KV namespace non collegato. Controlla il binding HAIREVOLUTION_KV nelle impostazioni del progetto." }), { status: 500, headers });
   }
 
   try {
@@ -55,14 +60,14 @@ export async function onRequest(context){
         phone: input.phone,
       };
       contacts.push(contact);
-      await kv.put(KV_KEY, JSON.stringify(contacts));
+      await writeContacts(kv, contacts);
       return new Response(JSON.stringify({ contact, contacts }), { status: 201, headers });
     }
 
     if(request.method === "PUT"){
       const body = await request.json();
       const contacts = Array.isArray(body.contacts) ? body.contacts : [];
-      await kv.put(KV_KEY, JSON.stringify(contacts));
+      await writeContacts(kv, contacts);
       return new Response(JSON.stringify({ contacts }), { status: 200, headers });
     }
 

@@ -1,5 +1,5 @@
 // Funzione Cloudflare Pages per HairEvolution BarberApp.
-// Traccia quando un cliente della rubrica è stato invitato l'ultima volta
+// Traccia quando un cliente della rubrica e' stato invitato l'ultima volta
 // (data dell'ultimo click su "Invita"), usando Cloudflare KV.
 //
 // Endpoint: /api/invited
@@ -7,6 +7,7 @@
 //   PUT -> aggiorna il registro
 //
 // Richiede lo stesso binding KV usato da bookings.js: HAIREVOLUTION_KV
+// (Settings > Functions > KV namespace bindings).
 
 const KV_KEY = "invited";
 
@@ -28,7 +29,7 @@ export async function onRequest(context){
 
   const kv = env.HAIREVOLUTION_KV;
   if(!kv){
-    return new Response(JSON.stringify({ error: "KV namespace non collegato. Controlla il binding HAIREVOLUTION_KV." }), { status: 500, headers });
+    return new Response(JSON.stringify({ error: "KV namespace non collegato. Controlla il binding HAIREVOLUTION_KV nelle impostazioni del progetto." }), { status: 500, headers });
   }
 
   try {

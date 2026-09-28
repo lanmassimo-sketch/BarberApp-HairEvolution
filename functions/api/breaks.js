@@ -14,6 +14,7 @@ const KV_KEY = "breaks";
 const DEFAULT_BREAKS = {
   morning: { enabled: false, start: "12:00", end: "12:15" },
   afternoon: { enabled: false, start: "17:00", end: "17:15" },
+  vacation: { enabled: false, start: "", end: "" },
 };
 
 function corsHeaders(){

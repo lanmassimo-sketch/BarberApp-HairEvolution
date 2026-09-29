@@ -907,8 +907,8 @@ const SHOP = {
   ]
 };
 
-const APP_VERSION = "1.44";
-const APP_VERSION_DATE = "27/09/2026";
+const APP_VERSION = "1.45";
+const APP_VERSION_DATE = "28/09/2026";
 const CLIENT_ACCESS_PIN = "2002"; // PIN d'ingresso da dare ai clienti autorizzati a prenotare
 const DEV_ACCESS_PIN = "9090"; // PIN sviluppatore: bypassa i PIN normali e mostra lo stato tecnico
 
@@ -922,6 +922,13 @@ const APP_SUMMARY = [
 ];
 
 const CHANGELOG = [
+  { version:"1.45", date:"28/09/2026",
+    summary:"Anche il pulsante \"Cancella prenotazioni pi\u00f9 vecchie di 7 giorni\" ora chiede conferma prima di procedere, con la stessa schermata disegnata nell'app gi\u00e0 usata per le altre cancellazioni, invece di agire subito al click. Mostra quante prenotazioni verrebbero cancellate.",
+    changes:[
+    "Il pulsante \"Cancella prenotazioni pi\u00f9 vecchie di 7 giorni\" apre ora una conferma invece di agire subito",
+    "La conferma mostra il numero di prenotazioni vecchie che verrebbero cancellate",
+    "Stessa schermata di conferma gi\u00e0 usata per la cancellazione singola e per \"Azzera tutte\""
+  ]},
   { version:"1.44", date:"27/09/2026",
     summary:"Aggiunte le festivit\u00e0 italiane 2027 (comprese la data mobile di Pasquetta, 29 marzo 2027, e la festa patronale del 22 ottobre) accanto a quelle 2026 gi\u00e0 presenti, cos\u00ec il calendario resta corretto anche a cavallo dell'anno. Aggiunta inoltre una nuova sezione \"FERIE\" nella dashboard Titolare: un interruttore con due date (inizio/fine) per chiudere il negozio per un periodo di ferie, mostrato ai clienti come una normale festivit\u00e0 (grigio, non selezionabile).",
     changes:[
@@ -1236,6 +1243,7 @@ let state = {
   showOldOnly: false,
   confirmDeleteId: null,
   confirmDeleteAll: false,
+  confirmDeleteOld: false,
   rubricaOpen: false,
   view: "cliente", // cliente | titolare
   ownerUnlocked: false,
@@ -1712,6 +1720,10 @@ function render(){
 
   if(state.confirmDeleteAll){
     app.appendChild(renderDeleteAllConfirmSheet());
+  }
+
+  if(state.confirmDeleteOld){
+    app.appendChild(renderDeleteOldConfirmSheet());
   }
 
   if(state.toast){
@@ -2294,6 +2306,40 @@ function renderDeleteAllConfirmSheet(){
   return overlay;
 }
 
+function renderDeleteOldConfirmSheet(){
+  const cutoff = new Date();
+  cutoff.setDate(cutoff.getDate() - 7);
+  const cutoffKey = dateKey(cutoff);
+  const oldCount = state.bookings.filter(b => b.date < cutoffKey).length;
+
+  const overlay = document.createElement("div");
+  overlay.className = "sheet-overlay";
+  overlay.onclick = (e) => { if(e.target===overlay){ state.confirmDeleteOld=false; render(); } };
+
+  const sheet = document.createElement("div");
+  sheet.className = "sheet";
+  sheet.innerHTML = `
+    <h3>Cancellare le prenotazioni vecchie?</h3>
+    <div class="sheet-sub">Verranno cancellate <b>${oldCount}</b> prenotazioni più vecchie di 7 giorni. Quelle recenti e future non vengono toccate. L'operazione non è reversibile.</div>
+    <div class="sheet-actions">
+      <button class="btn-secondary" id="cancelDeleteOldBtn">Annulla</button>
+      <button class="btn-primary" id="confirmDeleteOldBtn" style="flex:1;background:var(--oxblood);">Sì, cancella</button>
+    </div>
+  `;
+  overlay.appendChild(sheet);
+
+  sheet.querySelector("#cancelDeleteOldBtn").onclick = () => { state.confirmDeleteOld = false; render(); };
+  sheet.querySelector("#confirmDeleteOldBtn").onclick = async () => {
+    state.bookings = state.bookings.filter(b => b.date >= cutoffKey);
+    state.confirmDeleteOld = false;
+    await syncBookings();
+    render();
+    flashToast("Prenotazioni vecchie cancellate");
+  };
+
+  return overlay;
+}
+
 function renderAddContactSheet(){
   const overlay = document.createElement("div");
   overlay.className = "sheet-overlay";
@@ -2478,11 +2524,9 @@ function renderOwnerView(main){
       cleanBtn.style.display = "block";
       cleanBtn.style.margin = "0 auto 8px auto";
       cleanBtn.textContent = `Cancella prenotazioni più vecchie di 7 giorni (${oldCount})`;
-      cleanBtn.onclick = async () => {
-        state.bookings = state.bookings.filter(b => b.date >= cutoffKey);
-        await syncBookings();
+      cleanBtn.onclick = () => {
+        state.confirmDeleteOld = true;
         render();
-        flashToast("Prenotazioni vecchie cancellate");
       };
       resetWrap.appendChild(cleanBtn);
     }

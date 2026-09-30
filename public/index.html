@@ -907,8 +907,8 @@ const SHOP = {
   ]
 };
 
-const APP_VERSION = "1.45";
-const APP_VERSION_DATE = "28/09/2026";
+const APP_VERSION = "1.46";
+const APP_VERSION_DATE = "29/09/2026";
 const CLIENT_ACCESS_PIN = "2002"; // PIN d'ingresso da dare ai clienti autorizzati a prenotare
 const DEV_ACCESS_PIN = "9090"; // PIN sviluppatore: bypassa i PIN normali e mostra lo stato tecnico
 
@@ -922,6 +922,14 @@ const APP_SUMMARY = [
 ];
 
 const CHANGELOG = [
+  { version:"1.46", date:"29/09/2026",
+    summary:"Aggiunta una protezione reale alle API condivise (bookings, breaks, contacts, invited): ora richiedono un header segreto (X-App-Secret) che deve combaciare con una variabile d'ambiente impostata su Cloudflare/Netlify, altrimenti rispondono 401 Non autorizzato. Prima i PIN proteggevano solo la schermata dell'app, non le API stesse: chi conosceva l'indirizzo poteva leggerle/scriverle direttamente. Ristretto anche il CORS al solo dominio dell'app invece che a chiunque. (In barberapp-beta.html, che non usa un database condiviso, questo non si applica: i dati restano solo nel browser.)",
+    changes:[
+    "Aggiunto un controllo del header X-App-Secret in tutte e 4 le funzioni serverless (Cloudflare e Netlify)",
+    "CORS ristretto al dominio dell'app invece di accettare richieste da qualsiasi sito",
+    "Il frontend invia ora l'header su ogni chiamata alle API",
+    "Richiede di impostare la variabile d'ambiente APP_SECRET su Cloudflare Pages (e su Netlify se ancora in uso)"
+  ]},
   { version:"1.45", date:"28/09/2026",
     summary:"Anche il pulsante \"Cancella prenotazioni pi\u00f9 vecchie di 7 giorni\" ora chiede conferma prima di procedere, con la stessa schermata disegnata nell'app gi\u00e0 usata per le altre cancellazioni, invece di agire subito al click. Mostra quante prenotazioni verrebbero cancellate.",
     changes:[
@@ -1390,6 +1398,13 @@ function canFit(dateStr, startSlot, durMin){
 
 /* ================= PERSISTENZA (database condiviso via Netlify Function) ================= */
 const API_URL = "/api/bookings";
+// Chiave condivisa che deve combaciare con la variabile d'ambiente APP_SECRET
+// impostata su Cloudflare Pages / Netlify (Settings > Environment variables).
+// Protegge le API da chiamate dirette esterne all'app.
+const APP_SECRET = "11fc45c60fa251ee7832cb3e9fb580a2";
+function apiHeaders(extra){
+  return { "X-App-Secret": APP_SECRET, ...(extra || {}) };
+}
 const STORAGE_KEY = "hairevolution_beta_bookings"; // fallback offline locale
 
 function saveBookingsLocal(){
@@ -1414,7 +1429,7 @@ function loadBookingsLocal(){
 // usa la copia salvata localmente come rete di sicurezza.
 async function fetchBookings(){
   try {
-    const res = await fetch(API_URL, { method: "GET" });
+    const res = await fetch(API_URL, { method: "GET", headers: apiHeaders() });
     if(!res.ok) throw new Error("risposta non ok");
     const data = await res.json();
     state.bookings = data.bookings || [];
@@ -1433,7 +1448,7 @@ async function pushBooking(booking){
   try {
     const res = await fetch(API_URL, {
       method: "POST",
-      headers: { "Content-Type": "application/json" },
+      headers: apiHeaders({ "Content-Type": "application/json" }),
       body: JSON.stringify(booking),
     });
     if(!res.ok) throw new Error("risposta non ok");
@@ -1456,7 +1471,7 @@ async function syncBookings(){
   try {
     await fetch(API_URL, {
       method: "PUT",
-      headers: { "Content-Type": "application/json" },
+      headers: apiHeaders({ "Content-Type": "application/json" }),
       body: JSON.stringify({ bookings: state.bookings }),
     });
   } catch(e) {
@@ -1493,7 +1508,7 @@ function loadBreaksLocal(){
 
 async function fetchBreaks(){
   try {
-    const res = await fetch(BREAKS_API_URL, { method: "GET" });
+    const res = await fetch(BREAKS_API_URL, { method: "GET", headers: apiHeaders() });
     if(!res.ok) throw new Error("risposta non ok");
     const data = await res.json();
     state.breaks = { ...DEFAULT_BREAKS, ...(data.breaks || {}) };
@@ -1510,7 +1525,7 @@ async function syncBreaks(){
   try {
     await fetch(BREAKS_API_URL, {
       method: "PUT",
-      headers: { "Content-Type": "application/json" },
+      headers: apiHeaders({ "Content-Type": "application/json" }),
       body: JSON.stringify({ breaks: state.breaks }),
     });
   } catch(e) {
@@ -1555,7 +1570,7 @@ function loadContactsLocal(){
 
 async function fetchContacts(){
   try {
-    const res = await fetch(CONTACTS_API_URL, { method: "GET" });
+    const res = await fetch(CONTACTS_API_URL, { method: "GET", headers: apiHeaders() });
     if(!res.ok) throw new Error("risposta non ok");
     const data = await res.json();
     state.manualContacts = data.contacts || [];
@@ -1571,7 +1586,7 @@ async function addManualContact(name, phone){
   try {
     const res = await fetch(CONTACTS_API_URL, {
       method: "POST",
-      headers: { "Content-Type": "application/json" },
+      headers: apiHeaders({ "Content-Type": "application/json" }),
       body: JSON.stringify({ name, phone }),
     });
     if(!res.ok) throw new Error("risposta non ok");
@@ -1635,7 +1650,7 @@ function loadInvitedLocal(){
 
 async function fetchInvited(){
   try {
-    const res = await fetch(INVITED_API_URL, { method: "GET" });
+    const res = await fetch(INVITED_API_URL, { method: "GET", headers: apiHeaders() });
     if(!res.ok) throw new Error("risposta non ok");
     const data = await res.json();
     state.invitedLog = data.invited || {};
@@ -1654,7 +1669,7 @@ async function markInvited(phone){
   try {
     await fetch(INVITED_API_URL, {
       method: "PUT",
-      headers: { "Content-Type": "application/json" },
+      headers: apiHeaders({ "Content-Type": "application/json" }),
       body: JSON.stringify({ invited: state.invitedLog }),
     });
   } catch(e) {

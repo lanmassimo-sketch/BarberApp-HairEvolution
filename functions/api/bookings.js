@@ -15,9 +15,9 @@ const KV_KEY = "bookings";
 
 function corsHeaders(){
   return {
-    "Access-Control-Allow-Origin": "*",
+    "Access-Control-Allow-Origin": "https://barberapp-hairevolution.pages.dev",
     "Access-Control-Allow-Methods": "GET, POST, PUT, OPTIONS",
-    "Access-Control-Allow-Headers": "Content-Type",
+    "Access-Control-Allow-Headers": "Content-Type, X-App-Secret",
   };
 }
 
@@ -36,6 +36,14 @@ export async function onRequest(context){
 
   if(request.method === "OPTIONS"){
     return new Response(null, { status: 204, headers });
+  }
+
+  // Richiede un header segreto (X-App-Secret) che deve combaciare con la
+  // variabile d'ambiente APP_SECRET impostata su Cloudflare Pages
+  // (Settings > Environment variables). Blocca chi chiama l'API
+  // direttamente senza passare dall'app.
+  if(!env.APP_SECRET || request.headers.get("X-App-Secret") !== env.APP_SECRET){
+    return new Response(JSON.stringify({ error: "Non autorizzato" }), { status: 401, headers });
   }
 
   const kv = env.HAIREVOLUTION_KV;

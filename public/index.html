@@ -757,6 +757,19 @@
     position:relative;
   }
   .booking-card.new{border-color:var(--gold);background:#fbf6ea;}
+  .today-panel{
+    background:var(--sage-light);
+    border:1.5px solid #cfe0d1;
+    border-radius:14px;
+    padding:12px;
+    margin-bottom:14px;
+  }
+  .today-panel .booking-card{margin-bottom:8px;}
+  .today-panel .booking-card:last-child{margin-bottom:0;}
+  .past-panel{
+    opacity:.85;
+    margin-bottom:10px;
+  }
   .booking-card .b-top{
     display:flex;
     justify-content:space-between;
@@ -907,8 +920,8 @@ const SHOP = {
   ]
 };
 
-const APP_VERSION = "1.46";
-const APP_VERSION_DATE = "29/09/2026";
+const APP_VERSION = "1.47";
+const APP_VERSION_DATE = "30/09/2026";
 const CLIENT_ACCESS_PIN = "2002"; // PIN d'ingresso da dare ai clienti autorizzati a prenotare
 const DEV_ACCESS_PIN = "9090"; // PIN sviluppatore: bypassa i PIN normali e mostra lo stato tecnico
 
@@ -922,6 +935,14 @@ const APP_SUMMARY = [
 ];
 
 const CHANGELOG = [
+  { version:"1.47", date:"30/09/2026",
+    summary:"Riorganizzato l'elenco prenotazioni in dashboard Titolare: un pannello in evidenza \"OGGI\" mostra sempre le prenotazioni della giornata corrente (sfondo verde salvia), un pannello a comparsa separato raccoglie tutte le prenotazioni dei giorni precedenti (non solo quelle oltre 7 giorni come prima), e l'elenco principale \"PROSSIME PRENOTAZIONI\" mostra solo quelle future. Il pulsante di cancellazione massiva a 7 giorni resta invariato.",
+    changes:[
+    "Nuovo pannello \"OGGI\" sempre visibile, evidenziato, con le prenotazioni della giornata",
+    "Il pannello \"giorni precedenti\" ora mostra tutte le prenotazioni passate, non solo quelle oltre 7 giorni",
+    "L'elenco principale ora si chiama \"PROSSIME PRENOTAZIONI\" e mostra solo il futuro",
+    "Nessun cambiamento ai pulsanti di cancellazione (singola, 7 giorni, tutte)"
+  ]},
   { version:"1.46", date:"29/09/2026",
     summary:"Aggiunta una protezione reale alle API condivise (bookings, breaks, contacts, invited): ora richiedono un header segreto (X-App-Secret) che deve combaciare con una variabile d'ambiente impostata su Cloudflare/Netlify, altrimenti rispondono 401 Non autorizzato. Prima i PIN proteggevano solo la schermata dell'app, non le API stesse: chi conosceva l'indirizzo poteva leggerle/scriverle direttamente. Ristretto anche il CORS al solo dominio dell'app invece che a chiunque. (In barberapp-beta.html, che non usa un database condiviso, questo non si applica: i dati restano solo nel browser.)",
     changes:[
@@ -2442,77 +2463,98 @@ function renderOwnerView(main){
   main.appendChild(renderVacationSection());
   main.appendChild(renderRubricaSection());
 
-  const label = document.createElement("div");
-  label.className = "section-label";
-  label.textContent = "PRENOTAZIONI";
-  main.appendChild(label);
+  const buildBookingCard = (b) => {
+    const svc = ALL_SERVICES.find(s=>s.id===b.serviceId);
+    const dObj = new Date(b.date+"T00:00:00");
+    const card = document.createElement("div");
+    card.className = "booking-card" + (!b.seenByOwner ? " new" : "");
+    card.innerHTML = `
+      <div class="b-top">
+        <div>
+          <div class="b-date">${DOW[dObj.getDay()]} ${formatDateLong(dObj)}</div>
+          <div class="b-time">${b.time}</div>
+        </div>
+        ${!b.seenByOwner ? '<div class="badge-new">NUOVA</div>' : ''}
+      </div>
+      <div class="b-service">${svc.name} · ${fmtEUR(svc.price)} · ${svc.dur} min</div>
+      ${b.createdAt ? `<div class="b-created">Prenotato il ${formatCreatedAt(b.createdAt)}</div>` : ''}
+      <div class="b-client">
+        <div>
+          <div class="b-name">${b.name}</div>
+          <div class="b-phone">${b.phone}</div>
+        </div>
+        <div style="display:flex;gap:6px;">
+          <a class="icon-btn" target="_blank" rel="noopener" href="${'https://wa.me/'+toWhatsappNumber(b.phone)+'?text='+encodeURIComponent('Ciao '+b.name+'! Ti confermiamo la prenotazione per '+svc.name+' il '+formatDateLong(dObj)+' alle '+b.time+' da HairEvolution. Ti aspettiamo!')}">WhatsApp</a>
+          <button class="icon-btn" style="background:var(--oxblood-light);color:var(--oxblood);" data-booking-id="${b.id}">🗑</button>
+        </div>
+      </div>
+    `;
+    card.querySelector("button[data-booking-id]").onclick = () => {
+      state.confirmDeleteId = b.id;
+      render();
+    };
+    return card;
+  };
 
-  const oldCutoff = new Date();
-  oldCutoff.setDate(oldCutoff.getDate() - 7);
-  const oldCutoffKey = dateKey(oldCutoff);
-  const pastCount = state.bookings.filter(b => b.date < oldCutoffKey).length;
+  const todaysBookings = state.bookings.filter(b => b.date === todayKey).sort((a,b)=>a.time.localeCompare(b.time));
+  const futureBookings = state.bookings.filter(b => b.date > todayKey).sort((a,b)=> (a.date+a.time).localeCompare(b.date+b.time));
+  const pastBookings = state.bookings.filter(b => b.date < todayKey).sort((a,b)=> (a.date+a.time).localeCompare(b.date+b.time));
 
-  if(pastCount > 0){
+  // --- Pannello in evidenza: prenotazioni di OGGI ---
+  const todayLabel = document.createElement("div");
+  todayLabel.className = "section-label";
+  todayLabel.textContent = `OGGI${todaysBookings.length ? ' ('+todaysBookings.length+')' : ''}`;
+  main.appendChild(todayLabel);
+
+  const todayPanel = document.createElement("div");
+  todayPanel.className = "today-panel";
+  if(todaysBookings.length === 0){
+    todayPanel.innerHTML = `<div class="empty-note">Nessuna prenotazione oggi.</div>`;
+  } else {
+    todaysBookings.forEach(b => todayPanel.appendChild(buildBookingCard(b)));
+  }
+  main.appendChild(todayPanel);
+
+  // --- Pannello a comparsa: prenotazioni dei GIORNI PRECEDENTI ---
+  if(pastBookings.length > 0){
     const toggleWrap = document.createElement("div");
     toggleWrap.style.textAlign = "center";
-    toggleWrap.style.marginBottom = "10px";
+    toggleWrap.style.margin = "14px 0 10px 0";
     const toggleBtn = document.createElement("button");
     toggleBtn.className = "link-btn";
     toggleBtn.textContent = state.showOldOnly
-      ? "← Torna all'elenco completo"
-      : `Vedi prenotazioni dei giorni precedenti (${pastCount})`;
+      ? "← Chiudi giorni precedenti"
+      : `Vedi prenotazioni dei giorni precedenti (${pastBookings.length})`;
     toggleBtn.onclick = () => { state.showOldOnly = !state.showOldOnly; render(); };
     toggleWrap.appendChild(toggleBtn);
     main.appendChild(toggleWrap);
+
+    if(state.showOldOnly){
+      const pastPanel = document.createElement("div");
+      pastPanel.className = "past-panel";
+      pastBookings.forEach(b => pastPanel.appendChild(buildBookingCard(b)));
+      main.appendChild(pastPanel);
+    }
   }
+
+  // --- Elenco principale: prossime prenotazioni (dopo oggi) ---
+  const label = document.createElement("div");
+  label.className = "section-label";
+  label.textContent = "PROSSIME PRENOTAZIONI";
+  main.appendChild(label);
 
   if(state.bookings.length===0){
     const empty = document.createElement("div");
     empty.className = "empty-state";
     empty.innerHTML = `<div class="e-icon">🗓️</div>Nessuna prenotazione ancora.<br>Le nuove prenotazioni dei clienti<br>appariranno qui in tempo reale.`;
     main.appendChild(empty);
-  } else if(state.showOldOnly && pastCount === 0){
+  } else if(futureBookings.length === 0){
     const empty = document.createElement("div");
-    empty.className = "empty-state";
-    empty.innerHTML = `<div class="e-icon">🗓️</div>Nessuna prenotazione nei giorni precedenti.`;
+    empty.className = "empty-note";
+    empty.textContent = "Nessuna prenotazione nei prossimi giorni.";
     main.appendChild(empty);
   } else {
-    const base = state.showOldOnly
-      ? state.bookings.filter(b => b.date < oldCutoffKey)
-      : state.bookings;
-    const sorted = [...base].sort((a,b)=> (a.date+a.time).localeCompare(b.date+b.time));
-    sorted.forEach(b=>{
-      const svc = ALL_SERVICES.find(s=>s.id===b.serviceId);
-      const dObj = new Date(b.date+"T00:00:00");
-      const card = document.createElement("div");
-      card.className = "booking-card" + (!b.seenByOwner ? " new" : "");
-      card.innerHTML = `
-        <div class="b-top">
-          <div>
-            <div class="b-date">${DOW[dObj.getDay()]} ${formatDateLong(dObj)}</div>
-            <div class="b-time">${b.time}</div>
-          </div>
-          ${!b.seenByOwner ? '<div class="badge-new">NUOVA</div>' : ''}
-        </div>
-        <div class="b-service">${svc.name} · ${fmtEUR(svc.price)} · ${svc.dur} min</div>
-        ${b.createdAt ? `<div class="b-created">Prenotato il ${formatCreatedAt(b.createdAt)}</div>` : ''}
-        <div class="b-client">
-          <div>
-            <div class="b-name">${b.name}</div>
-            <div class="b-phone">${b.phone}</div>
-          </div>
-          <div style="display:flex;gap:6px;">
-            <a class="icon-btn" target="_blank" rel="noopener" href="${'https://wa.me/'+toWhatsappNumber(b.phone)+'?text='+encodeURIComponent('Ciao '+b.name+'! Ti confermiamo la prenotazione per '+svc.name+' il '+formatDateLong(dObj)+' alle '+b.time+' da HairEvolution. Ti aspettiamo!')}">WhatsApp</a>
-            <button class="icon-btn" style="background:var(--oxblood-light);color:var(--oxblood);" data-booking-id="${b.id}">🗑</button>
-          </div>
-        </div>
-      `;
-      card.querySelector("button[data-booking-id]").onclick = () => {
-        state.confirmDeleteId = b.id;
-        render();
-      };
-      main.appendChild(card);
-    });
+    futureBookings.forEach(b => main.appendChild(buildBookingCard(b)));
   }
 
   if(hadUnseen){

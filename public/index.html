@@ -583,6 +583,9 @@
     text-align:center;
     margin-top:6px;
   }
+  .cancel-item{display:flex;align-items:center;justify-content:space-between;gap:12px;padding:12px 0;border-top:1px solid var(--line, #e6dfd2);font-size:14px;}
+  .cancel-item .btn-primary{flex:0 0 auto;padding:10px 14px;}
+  .cancel-late{font-size:12.5px;color:#8a6d1f;max-width:48%;text-align:right;}
   .link-btn{
     background:none;
     border:none;
@@ -920,8 +923,8 @@ const SHOP = {
   ]
 };
 
-const APP_VERSION = "1.47";
-const APP_VERSION_DATE = "30/09/2026";
+const APP_VERSION = "1.48";
+const APP_VERSION_DATE = "01/10/2026";
 const CLIENT_ACCESS_PIN = "2002"; // PIN d'ingresso da dare ai clienti autorizzati a prenotare
 const DEV_ACCESS_PIN = "9090"; // PIN sviluppatore: bypassa i PIN normali e mostra lo stato tecnico
 
@@ -935,6 +938,16 @@ const APP_SUMMARY = [
 ];
 
 const CHANGELOG = [
+  { version:"1.48", date:"01/10/2026",
+    summary:"Aggiunta la disdetta della prenotazione da parte del cliente: dalla schermata di prenotazione, toccando \"Devi disdire una prenotazione?\", il cliente inserisce il suo numero di telefono, vede le sue prenotazioni future e ne annulla una con una conferma. Si pu\u00f2 disdire fino a 1 ora prima dell'appuntamento; oltre, l'app invita a chiamare il negozio. Dopo la disdetta lo slot torna libero e il cliente pu\u00f2 avvisare il negozio su WhatsApp.",
+    changes:[
+    "Nuovo pulsante \"Devi disdire una prenotazione?\" nella schermata cliente",
+    "Ricerca delle prenotazioni future tramite numero di telefono",
+    "Disdetta consentita fino a 1 ora prima dell'appuntamento (CANCEL_MIN_MINUTES)",
+    "Conferma a due passaggi prima di annullare",
+    "Prima di annullare, l'elenco viene riletto dal database per non sovrascrivere prenotazioni fatte nel frattempo",
+    "Dopo la disdetta: pulsante per avvisare il negozio su WhatsApp (invio manuale)"
+  ]},
   { version:"1.47", date:"30/09/2026",
     summary:"Riorganizzato l'elenco prenotazioni in dashboard Titolare: un pannello in evidenza \"OGGI\" mostra sempre le prenotazioni della giornata corrente (sfondo verde salvia), un pannello a comparsa separato raccoglie tutte le prenotazioni dei giorni precedenti (non solo quelle oltre 7 giorni come prima), e l'elenco principale \"PROSSIME PRENOTAZIONI\" mostra solo quelle future. Il pulsante di cancellazione massiva a 7 giorni resta invariato.",
     changes:[
@@ -1288,6 +1301,12 @@ let state = {
   formPhone: "",
   showConfirm: false,
   lastBooking: null,
+  showCancelSheet: false,
+  cancelPhone: "",
+  cancelSearched: false,
+  cancelConfirmId: null,
+  cancelDone: null,
+  cancelBusy: false,
   toast: null,
 };
 
@@ -1742,6 +1761,10 @@ function render(){
     app.appendChild(renderBookingSheet());
   }
 
+  if(state.showCancelSheet){
+    app.appendChild(renderCancelSheet());
+  }
+
   if(state.showChangelog){
     app.appendChild(renderChangelogSheet());
   }
@@ -1915,6 +1938,16 @@ function renderClientView(main){
     timeSection.appendChild(legend);
   }
   main.appendChild(timeSection);
+
+  // Disdetta prenotazione
+  const cancelLink = document.createElement("div");
+  cancelLink.style.textAlign = "center";
+  cancelLink.innerHTML = `<button class="link-btn" id="openCancelBtn">Devi disdire una prenotazione?</button>`;
+  main.appendChild(cancelLink);
+  cancelLink.querySelector("#openCancelBtn").onclick = () => {
+    state.showCancelSheet = true; state.cancelPhone = ""; state.cancelSearched = false;
+    state.cancelConfirmId = null; state.cancelDone = null; render();
+  };
 
   // Summary bar
   const svc = ALL_SERVICES.find(s=>s.id===state.selectedService);
@@ -2273,6 +2306,169 @@ function renderRubricaSection(){
   });
 
   return wrap;
+}
+
+/* ---------- DISDETTA PRENOTAZIONE (cliente) ---------- */
+const CANCEL_MIN_MINUTES = 60; // si pu\u00f2 disdire fino a 1 ora prima
+
+function phoneKey(p){
+  let d = (p || "").replace(/[^\d]/g, "");
+  if(d.startsWith("0039")) d = d.slice(4);
+  else if(d.startsWith("39") && d.length > 10) d = d.slice(2);
+  return d;
+}
+
+function minutesUntilBooking(b){
+  const parts = (b.time || "0:0").split(":").map(Number);
+  const start = new Date(b.date + "T00:00:00");
+  start.setHours(parts[0], parts[1], 0, 0);
+  return Math.round((start.getTime() - Date.now()) / 60000);
+}
+
+function findClientBookings(phone){
+  const key = phoneKey(phone);
+  if(key.length < 6) return [];
+  return state.bookings
+    .filter(b => phoneKey(b.phone) === key && minutesUntilBooking(b) > 0)
+    .sort((a, b) => (a.date + a.time).localeCompare(b.date + b.time));
+}
+
+// Rilegge l'elenco dal database senza ridisegnare la schermata.
+async function refreshBookingsQuiet(){
+  try {
+    const res = await fetch(API_URL, { method: "GET", headers: apiHeaders() });
+    if(!res.ok) throw new Error("risposta non ok");
+    const data = await res.json();
+    state.bookings = data.bookings || [];
+    saveBookingsLocal();
+  } catch(e) {
+    console.warn("Impossibile aggiornare le prenotazioni:", e);
+  }
+}
+
+// Ritorna la prenotazione annullata, "late" se manca meno del limite, null se non trovata.
+async function cancelBookingByClient(id){
+  await refreshBookingsQuiet();
+  const target = state.bookings.find(b => b.id === id);
+  if(!target) return null;
+  if(minutesUntilBooking(target) < CANCEL_MIN_MINUTES) return "late";
+  state.bookings = state.bookings.filter(b => b.id !== id);
+  await syncBookings();
+  return target;
+}
+
+function renderCancelSheet(){
+  const closeSheet = () => { state.showCancelSheet = false; state.cancelDone = null; state.cancelConfirmId = null; render(); };
+  const overlay = document.createElement("div");
+  overlay.className = "sheet-overlay";
+  overlay.onclick = (e) => { if(e.target === overlay) closeSheet(); };
+  const sheet = document.createElement("div");
+  sheet.className = "sheet";
+
+  // Schermata finale: disdetta riuscita
+  if(state.cancelDone){
+    const b = state.cancelDone;
+    const svc = ALL_SERVICES.find(s => s.id === b.serviceId);
+    const dObj = new Date(b.date + "T00:00:00");
+    sheet.innerHTML = `
+      <div class="confirm-screen">
+        <div class="confirm-icon">\u2713</div>
+        <h3>Prenotazione disdetta</h3>
+        <div class="confirm-detail">
+          <div><b>${svc ? svc.name : ""}</b></div>
+          <div>${formatDateLong(dObj)} ore <b>${b.time}</b></div>
+        </div>
+        <a class="wa-btn" id="waCancelBtn" target="_blank" rel="noopener">Avvisa il negozio su WhatsApp</a>
+        <button class="link-btn" id="closeCancel">Chiudi</button>
+      </div>`;
+    overlay.appendChild(sheet);
+    const msg = encodeURIComponent(`Ciao! Ho disdetto la prenotazione: ${svc ? svc.name : ""} il ${formatDateLong(dObj)} alle ${b.time}. Nome: ${b.name}`);
+    sheet.querySelector("#waCancelBtn").href = `https://wa.me/${SHOP.ownerPhone}?text=${msg}`;
+    sheet.querySelector("#closeCancel").onclick = closeSheet;
+    return overlay;
+  }
+
+  const found = state.cancelSearched ? findClientBookings(state.cancelPhone) : [];
+  let listHtml = "";
+  if(state.cancelSearched){
+    if(!found.length){
+      listHtml = `<div class="sheet-sub">Nessuna prenotazione futura trovata con questo numero.</div>`;
+    } else {
+      listHtml = found.map(b => {
+        const svc = ALL_SERVICES.find(s => s.id === b.serviceId);
+        const dObj = new Date(b.date + "T00:00:00");
+        const canCancel = minutesUntilBooking(b) >= CANCEL_MIN_MINUTES;
+        let action;
+        if(!canCancel){
+          action = `<div class="cancel-late">Mancano meno di 1 ora: chiama il negozio al ${SHOP.phoneDisplay}</div>`;
+        } else if(state.cancelConfirmId === b.id){
+          action = `<div style="display:flex;gap:8px;"><button class="btn-secondary cancel-no">No</button><button class="btn-primary cancel-yes" data-id="${b.id}" style="background:var(--oxblood);" ${state.cancelBusy ? "disabled" : ""}>S\u00ec, disdici</button></div>`;
+        } else {
+          action = `<button class="btn-primary cancel-ask" data-id="${b.id}" style="background:var(--oxblood);">Disdici</button>`;
+        }
+        return `<div class="cancel-item"><div><b>${svc ? svc.name : ""}</b><br>${formatDateLong(dObj)} ore ${b.time}</div>${action}</div>`;
+      }).join("");
+    }
+  }
+
+  sheet.innerHTML = `
+    <h3>Disdici prenotazione</h3>
+    <div class="sheet-sub">Inserisci il numero di telefono usato per prenotare. Puoi disdire fino a 1 ora prima dell'appuntamento.</div>
+    <div class="field">
+      <label>Numero di telefono</label>
+      <input id="cPhone" type="tel" placeholder="Es. 333 1234567" />
+    </div>
+    <div class="sheet-actions">
+      <button class="btn-secondary" id="cancelClose">Chiudi</button>
+      <button class="btn-primary" id="cancelSearch" style="flex:1;">Cerca prenotazioni</button>
+    </div>
+    <div id="cancelList" style="margin-top:14px;">${listHtml}</div>
+  `;
+  overlay.appendChild(sheet);
+
+  const phoneInput = sheet.querySelector("#cPhone");
+  phoneInput.value = state.cancelPhone;
+  phoneInput.oninput = () => { state.cancelPhone = phoneInput.value; };
+
+  sheet.querySelector("#cancelClose").onclick = closeSheet;
+  sheet.querySelector("#cancelSearch").onclick = async () => {
+    if(phoneKey(state.cancelPhone).length < 6){
+      flashToast("Inserisci il numero di telefono");
+      return;
+    }
+    await refreshBookingsQuiet();
+    state.cancelSearched = true;
+    state.cancelConfirmId = null;
+    render();
+  };
+
+  sheet.querySelectorAll(".cancel-ask").forEach(btn => {
+    btn.onclick = () => { state.cancelConfirmId = btn.dataset.id; render(); };
+  });
+  sheet.querySelectorAll(".cancel-no").forEach(btn => {
+    btn.onclick = () => { state.cancelConfirmId = null; render(); };
+  });
+  sheet.querySelectorAll(".cancel-yes").forEach(btn => {
+    btn.onclick = async () => {
+      state.cancelBusy = true;
+      btn.disabled = true;
+      btn.textContent = "Attendi...";
+      const result = await cancelBookingByClient(btn.dataset.id);
+      state.cancelBusy = false;
+      state.cancelConfirmId = null;
+      if(result === "late"){
+        flashToast("Mancano meno di 1 ora: chiama il negozio");
+      } else if(!result){
+        flashToast("Prenotazione non trovata");
+        render();
+      } else {
+        state.cancelDone = result;
+        render();
+      }
+    };
+  });
+
+  return overlay;
 }
 
 function renderDeleteConfirmSheet(){

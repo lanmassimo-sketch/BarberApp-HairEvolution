@@ -24,7 +24,7 @@ function corsHeaders(){
 }
 
 // Per i clienti: solo gli slot occupati, senza nomi né telefoni.
-const busyOnly = (list) => list.map((b) => ({ id: "x", date: b.date, time: b.time, serviceId: b.serviceId, seenByOwner: true }));
+const busyOnly = (list) => list.filter((b) => b.status !== "cancelled").map((b) => ({ id: "x", date: b.date, time: b.time, serviceId: b.serviceId, seenByOwner: true }));
 
 async function readBookings(kv){
   const data = await kv.get(KV_KEY, { type: "json" });

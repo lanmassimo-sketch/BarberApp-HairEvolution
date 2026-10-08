@@ -570,6 +570,10 @@
     gap:6px;
   }
   .reminder-list div{display:flex;gap:8px;align-items:flex-start;}
+  .cal-btn{display:block;width:100%;background:var(--charcoal);color:var(--gold-light);border:none;padding:13px;border-radius:10px;font-weight:700;font-size:13.5px;text-align:center;margin-top:6px;cursor:pointer;}
+  .tomorrow-row{display:flex;align-items:center;justify-content:space-between;gap:10px;padding:10px 0;border-top:1px solid var(--line, #e6dfd2);font-size:13.5px;}
+  .tomorrow-row:first-of-type{border-top:none;}
+  .tomorrow-done{font-size:12px;color:var(--sage);font-weight:700;white-space:nowrap;}
   .wa-btn{
     display:block;
     width:100%;
@@ -762,6 +766,11 @@
     position:relative;
   }
   .booking-card.new{border-color:var(--gold);background:#fbf6ea;}
+  .booking-card.cancelled{background:#f1eeea;border-color:#d8d1bf;}
+  .booking-card.cancelled .b-time,.booking-card.cancelled .b-service{color:var(--grey-light);}
+  .booking-card.cancelled .b-name{color:var(--grey);}
+  .badge-cancel{background:var(--oxblood-light);color:var(--oxblood);font-size:9.5px;font-weight:700;padding:3px 8px;border-radius:999px;letter-spacing:.3px;}
+  .b-cancelled{font-size:11.5px;color:var(--oxblood);font-weight:600;margin-top:2px;}
   .today-panel{
     background:var(--sage-light);
     border:1.5px solid #cfe0d1;
@@ -936,10 +945,12 @@ const PRIVACY = {
   aggiornata: "01/10/2026"
 };
 
-const APP_VERSION = "2.0";
-const APP_VERSION_DATE = "01/10/2026";
+const APP_VERSION = "2.3";
+const APP_VERSION_DATE = "03/10/2026";
 
 const APP_SUMMARY = [
+  { title:"Disdette", text:"Se un cliente disdice, la prenotazione resta visibile al titolare con il nome barrato, il badge \"DISDETTA\" e la data e l'ora della disdetta. Lo slot torna libero subito. Le disdette non contano in statistiche, incasso e rubrica; il titolare può eliminarle con il cestino." },
+  { title:"Promemoria", text:"L'app non invia messaggi automatici. Dopo la prenotazione il cliente può salvare l'appuntamento sul calendario del telefono (con avvisi 1 giorno e 1 ora prima). Il titolare, nella sezione \"Promemoria di domani\", vede gli appuntamenti del giorno dopo e può ricordarli con un tocco su WhatsApp (invio manuale)." },
   { title:"Accesso e sicurezza", text:"I PIN non sono nel codice: li controlla il server, che dopo il PIN giusto rilascia un accesso (clienti: senza scadenza, ricordato dal dispositivo; Titolare e Sviluppatore: PIN richiesto a ogni accesso). Dopo 10 tentativi sbagliati in 15 minuti l'accesso si blocca. I clienti vedono solo gli orari occupati, mai nomi o telefoni degli altri." },
   { title:"Privacy e promozioni", text:"Nel modulo di prenotazione c'è il link all'informativa privacy, aperta dentro l'app. Oltre alla casella obbligatoria per la prenotazione, c'è una seconda casella facoltativa e non preselezionata per ricevere inviti e promozioni su WhatsApp. In Rubrica Clienti il pulsante \"Invita\" è attivo solo per chi ha dato questo consenso; per gli altri compare \"Senza consenso promozioni\". Per i clienti aggiunti a mano, il titolare spunta la casella solo se il cliente ha acconsentito." },
   { title:"Giorni disponibili", text:"L'app mostra i prossimi 14 giorni prenotabili. I giorni chiusi (domenica, lunedì, festività 2026 e la festa patronale del 22 ottobre) restano visibili ma in grigio e non selezionabili." },
@@ -952,6 +963,32 @@ const APP_SUMMARY = [
 ];
 
 const CHANGELOG = [
+  { version:"2.3", date:"03/10/2026",
+    summary:"Disdetta: se la ricerca per numero di telefono non dà risultati, l'app ora spiega il motivo invece di mostrare sempre \"nessuna prenotazione trovata\". Il limite di ricerche del server conta solo quelle senza risultato, così chi prova più volte (ad esempio durante i test) non viene bloccato per errore.",
+    changes:[
+    "Messaggio chiaro per limite di ricerche superato e per errori di connessione",
+    "Messaggio \"nessuna prenotazione\" più utile: ricorda che passate e già disdette non compaiono",
+    "mybookings.js: il limite (15 ogni 15 minuti) conta solo le ricerche senza risultato",
+    "Nella beta locale cambia solo il testo del messaggio"
+  ]},
+  { version:"2.2", date:"03/10/2026",
+    summary:"Disdette visibili al titolare: quando un cliente disdice, la prenotazione non sparisce più. Resta nell'elenco del Titolare con il nome barrato, il badge \"DISDETTA\" e l'ora della disdetta. Lo slot torna libero per gli altri clienti e la prenotazione disdetta non conta in statistiche, incasso, rubrica e promemoria di domani.",
+    changes:[
+    "Disdetta cliente: la prenotazione viene segnata come disdetta invece di essere cancellata",
+    "Vista Titolare: nome barrato, badge DISDETTA e riga \"Disdetta il ...\" con data e ora",
+    "Le disdette nuove compaiono come da leggere (conteggio sul pulsante Titolare)",
+    "Escluse da: orari occupati, prenotazioni di oggi/totali, incasso, visite in rubrica, promemoria di domani",
+    "Il titolare può eliminare la scheda con il cestino come per le altre prenotazioni",
+    "Funzioni cancel.js, bookings.js e mybookings.js aggiornate"
+  ]},
+  { version:"2.1", date:"02/10/2026",
+    summary:"Promemoria: tolte dalla schermata di conferma le righe che promettevano promemoria automatici mai esistiti (e la nota \"Notifica inviata al titolare\"). Il cliente può ora salvare l'appuntamento sul calendario del telefono, con avvisi 1 giorno e 1 ora prima. Nella vista Titolare c'è la nuova sezione \"Promemoria di domani\", con l'elenco degli appuntamenti e un pulsante WhatsApp già scritto per ricordarli ai clienti.",
+    changes:[
+    "Schermata di conferma: testi corretti, nessuna promessa di promemoria automatici",
+    "Nuovo pulsante \"Aggiungi al calendario\" (file .ics con avvisi 1 giorno e 1 ora prima)",
+    "Vista Titolare: sezione \"Promemoria di domani\" con pulsante \"Ricorda\" su WhatsApp e segno \"Ricordato\"",
+    "Tolta la falsa nota \"Notifica inviata al titolare\" alla chiusura della conferma"
+  ]},
   { version:"2.0", date:"01/10/2026",
     summary:"Sicurezza: login lato server. I PIN (clienti, Titolare, Sviluppatore) e il segreto non sono più scritti nel codice dell'app ma solo su Cloudflare. Il server controlla il PIN, limita i tentativi sbagliati e rilascia un accesso (clienti: senza scadenza, ricordato dal dispositivo; Titolare e Sviluppatore: PIN richiesto a ogni accesso). I clienti ricevono solo gli orari occupati, senza nomi né telefoni degli altri; nomi, rubrica e inviti li vede solo il Titolare. La disdetta è controllata dal server (telefono e limite di 1 ora).",
     changes:[
@@ -1357,6 +1394,7 @@ let state = {
   lastBooking: null,
   showCancelSheet: false,
   cancelResults: [],
+  cancelError: "",
   showPrivacy: false,
   formPrivacy: false,
   formMarketing: false,
@@ -1482,7 +1520,7 @@ function canFit(dateStr, startSlot, durMin){
   // Each booking blocks a whole number of 15-minute grid slots: the
   // duration is rounded down to the nearest 15 minutes, with a 15-minute
   // minimum (so even a 5-min service always blocks at least one slot).
-  const dayBookings = state.bookings.filter(b => b.date === dateStr);
+  const dayBookings = state.bookings.filter(b => b.date === dateStr && b.status !== "cancelled");
   for(const b of dayBookings){
     const svc = ALL_SERVICES.find(s=>s.id===b.serviceId);
     const bStart = slotToMinutes(b.time);
@@ -1742,7 +1780,7 @@ async function addManualContact(name, phone, marketing){
 // per numero di telefono.
 function getCombinedContacts(){
   const map = new Map();
-  const sorted = [...state.bookings].sort((a,b)=> (a.date+a.time).localeCompare(b.date+b.time));
+  const sorted = state.bookings.filter(b => b.status !== "cancelled").sort((a,b)=> (a.date+a.time).localeCompare(b.date+b.time));
   sorted.forEach(b=>{
     const key = toWhatsappNumber(b.phone);
     const existing = map.get(key);
@@ -2221,10 +2259,11 @@ function renderConfirmOverlay(booking){
         <div>${booking.name} · ${booking.phone}</div>
       </div>
       <div class="reminder-list">
-        <div>📩 Promemoria inviato ora, alla prenotazione</div>
-        <div>📅 Promemoria previsto il giorno dell'appuntamento</div>
-        <div>⏰ Promemoria previsto 1 ora prima</div>
+        <div>✅ Prenotazione registrata</div>
+        <div>📅 Non partono promemoria automatici: salva l'appuntamento sul calendario del telefono, con avviso 1 giorno e 1 ora prima</div>
+        <div>💬 Se vuoi, avvisa anche il negozio su WhatsApp</div>
       </div>
+      <button class="cal-btn" id="calBtn">Aggiungi al calendario</button>
       <a class="wa-btn" id="waBtn" target="_blank" rel="noopener">Invia conferma su WhatsApp al negozio</a>
       <button class="link-btn" id="closeConfirm">Chiudi</button>
     </div>
@@ -2237,10 +2276,74 @@ function renderConfirmOverlay(booking){
   );
   sheet.querySelector("#waBtn").href = `https://wa.me/${SHOP.ownerPhone}?text=${msg}`;
 
+  sheet.querySelector("#calBtn").onclick = () => downloadCalendarEvent(booking, svc);
+
   sheet.querySelector("#closeConfirm").onclick = () => {
     overlay.remove();
-    flashToast("📲 Notifica inviata al titolare");
+    render();
   };
+}
+
+/* ---------- CALENDARIO (.ics) e PROMEMORIA DI DOMANI ---------- */
+function icsEscape(t){ return String(t).replace(/\\/g,"\\\\").replace(/;/g,"\\;").replace(/,/g,"\\,").replace(/\n/g,"\\n"); }
+function icsLocal(date, time, addMin){
+  const [y,m,d] = date.split("-").map(Number), [h,mi] = time.split(":").map(Number);
+  const t = new Date(y, m-1, d, h, mi + (addMin||0));
+  return t.getFullYear()+pad(t.getMonth()+1)+pad(t.getDate())+"T"+pad(t.getHours())+pad(t.getMinutes())+"00";
+}
+function downloadCalendarEvent(booking, svc){
+  const stamp = new Date().toISOString().replace(/[-:]/g,"").replace(/\.\d+Z$/,"Z");
+  const alarm = (trigger, text) => ["BEGIN:VALARM","ACTION:DISPLAY","DESCRIPTION:"+text,"TRIGGER:"+trigger,"END:VALARM"];
+  const lines = ["BEGIN:VCALENDAR","VERSION:2.0","PRODID:-//HairEvolution//Prenotazione//IT","CALSCALE:GREGORIAN","METHOD:PUBLISH","BEGIN:VEVENT",
+    "UID:"+booking.id+"@hairevolution","DTSTAMP:"+stamp,
+    "DTSTART:"+icsLocal(booking.date, booking.time,0),"DTEND:"+icsLocal(booking.date, booking.time, svc.dur),
+    "SUMMARY:"+icsEscape("HairEvolution - "+svc.name),
+    "DESCRIPTION:"+icsEscape("Prenotazione da "+SHOP.name+". Per spostare o disdire usa l'app o chiama "+SHOP.phoneDisplay+"."),
+    "LOCATION:"+icsEscape(SHOP.name),
+    ...alarm("-P1D","Domani hai un appuntamento da HairEvolution"),
+    ...alarm("-PT1H","Tra un'ora hai un appuntamento da HairEvolution"),
+    "END:VEVENT","END:VCALENDAR"];
+  const blob = new Blob([lines.join("\r\n")], { type:"text/calendar;charset=utf-8" });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement("a");
+  a.href = url; a.download = "appuntamento-hairevolution.ics";
+  document.body.appendChild(a); a.click(); a.remove();
+  setTimeout(() => URL.revokeObjectURL(url), 4000);
+}
+
+const REMINDED_KEY = "hairevolution_reminded";
+function loadReminded(){ try { return JSON.parse(localStorage.getItem(REMINDED_KEY) || "{}"); } catch(e) { return {}; } }
+function markReminded(id){ const r = loadReminded(); r[id] = true; try { localStorage.setItem(REMINDED_KEY, JSON.stringify(r)); } catch(e) {} }
+
+function buildTomorrowPanel(){
+  const wrap = document.createElement("div");
+  const tm = new Date(); tm.setDate(tm.getDate()+1);
+  const key = dateKey(tm);
+  const list = state.bookings.filter(b => b.date === key && b.status !== "cancelled").sort((a,b) => a.time.localeCompare(b.time));
+  const reminded = loadReminded();
+  const label = document.createElement("div");
+  label.className = "section-label";
+  label.textContent = "PROMEMORIA DI DOMANI";
+  wrap.appendChild(label);
+  const card = document.createElement("div");
+  card.className = "booking-card";
+  if(!list.length){
+    card.innerHTML = `<div style="font-size:13px;color:var(--grey-light);">Nessun appuntamento domani (${DOW[tm.getDay()]} ${formatDateLong(tm)}).</div>`;
+  } else {
+    list.forEach(b => {
+      const svc = ALL_SERVICES.find(s => s.id === b.serviceId);
+      const msg = encodeURIComponent(`Ciao ${b.name.split(" ")[0]}! Ti ricordiamo il tuo appuntamento da HairEvolution domani ${formatDateLong(tm)} alle ${b.time}${svc ? " ("+svc.name+")" : ""}. Se non puoi venire, puoi disdire dall'app: ${SHOP.bookingLink}. A presto!`);
+      const row = document.createElement("div");
+      row.className = "tomorrow-row";
+      row.innerHTML = `<div><b>${b.time}</b> · ${b.name}<br><span style="color:var(--grey-light);font-size:12px;">${svc ? svc.name : ""}</span></div>
+        ${reminded[b.id] ? '<div class="tomorrow-done">✓ Ricordato</div>' : `<a class="icon-btn" target="_blank" rel="noopener" href="https://wa.me/39${phoneKey(b.phone)}?text=${msg}">Ricorda</a>`}`;
+      const link = row.querySelector("a.icon-btn");
+      if(link) link.addEventListener("click", () => { markReminded(b.id); setTimeout(render, 400); });
+      card.appendChild(row);
+    });
+  }
+  wrap.appendChild(card);
+  return wrap;
 }
 
 function flashToast(msg){
@@ -2530,8 +2633,10 @@ function renderCancelSheet(){
   const found = state.cancelSearched ? findClientBookings() : [];
   let listHtml = "";
   if(state.cancelSearched){
-    if(!found.length){
-      listHtml = `<div class="sheet-sub">Nessuna prenotazione futura trovata con questo numero.</div>`;
+    if(state.cancelError){
+      listHtml = `<div class="sheet-sub" style="color:var(--oxblood);font-weight:600;">${state.cancelError}</div>`;
+    } else if(!found.length){
+      listHtml = `<div class="sheet-sub">Nessuna prenotazione futura trovata con questo numero. Controlla che sia lo stesso usato per prenotare: le prenotazioni già passate o già disdette non compaiono.</div>`;
     } else {
       listHtml = found.map(b => {
         const svc = ALL_SERVICES.find(s => s.id === b.serviceId);
@@ -2575,10 +2680,16 @@ function renderCancelSheet(){
       flashToast("Inserisci il numero di telefono");
       return;
     }
+    state.cancelError = ""; state.cancelResults = [];
     try {
       const res = await fetch("/api/mybookings", { method:"POST", headers: apiHeaders({ "Content-Type":"application/json" }), body: JSON.stringify({ phone: state.cancelPhone }) });
-      state.cancelResults = res.ok ? ((await res.json()).bookings || []) : [];
-    } catch(e) { state.cancelResults = []; }
+      if(res.ok){
+        state.cancelResults = (await res.json()).bookings || [];
+      } else if(res.status !== 401) {
+        const data = await res.json().catch(() => ({}));
+        state.cancelError = data.error || "Errore del server, riprova tra poco.";
+      }
+    } catch(e) { state.cancelError = "Connessione assente o server non raggiungibile, riprova."; }
     state.cancelSearched = true;
     state.cancelConfirmId = null;
     render();
@@ -2790,9 +2901,10 @@ function renderOwnerView(main){
   const stats = document.createElement("div");
   stats.className = "owner-stats";
   const todayKey = dateKey(new Date());
-  const todayCount = state.bookings.filter(b=>b.date===todayKey).length;
-  const totalCount = state.bookings.length;
-  const todayRevenue = state.bookings.filter(b=>b.date===todayKey)
+  const activeBookings = state.bookings.filter(b => b.status !== "cancelled");
+  const todayCount = activeBookings.filter(b=>b.date===todayKey).length;
+  const totalCount = activeBookings.length;
+  const todayRevenue = activeBookings.filter(b=>b.date===todayKey)
     .reduce((sum,b)=>{ const s=ALL_SERVICES.find(x=>x.id===b.serviceId); return sum + (s?s.price:0); },0);
   stats.innerHTML = `
     <div class="stat-card"><div class="stat-num">${todayCount}</div><div class="stat-label">OGGI</div></div>
@@ -2800,6 +2912,7 @@ function renderOwnerView(main){
     <div class="stat-card"><div class="stat-num">${fmtEUR(todayRevenue)}</div><div class="stat-label">INCASSO OGGI</div></div>
   `;
   main.appendChild(stats);
+  main.appendChild(buildTomorrowPanel());
 
   main.appendChild(renderBreaksSection());
   main.appendChild(renderVacationSection());
@@ -2809,20 +2922,22 @@ function renderOwnerView(main){
     const svc = ALL_SERVICES.find(s=>s.id===b.serviceId);
     const dObj = new Date(b.date+"T00:00:00");
     const card = document.createElement("div");
-    card.className = "booking-card" + (!b.seenByOwner ? " new" : "");
+    const cancelled = b.status === "cancelled";
+    card.className = "booking-card" + (cancelled ? " cancelled" : (!b.seenByOwner ? " new" : ""));
     card.innerHTML = `
       <div class="b-top">
         <div>
           <div class="b-date">${DOW[dObj.getDay()]} ${formatDateLong(dObj)}</div>
           <div class="b-time">${b.time}</div>
         </div>
-        ${!b.seenByOwner ? '<div class="badge-new">NUOVA</div>' : ''}
+        ${cancelled ? '<div class="badge-cancel">DISDETTA</div>' : (!b.seenByOwner ? '<div class="badge-new">NUOVA</div>' : '')}
       </div>
       <div class="b-service">${svc.name} · ${fmtEUR(svc.price)} · ${svc.dur} min</div>
       ${b.createdAt ? `<div class="b-created">Prenotato il ${formatCreatedAt(b.createdAt)}</div>` : ''}
+      ${cancelled && b.cancelledAt ? `<div class="b-cancelled">Disdetta il ${formatCreatedAt(b.cancelledAt)}</div>` : ''}
       <div class="b-client">
         <div>
-          <div class="b-name">${b.name}</div>
+          <div class="b-name">${cancelled ? "<s>" + b.name + "</s>" : b.name}</div>
           <div class="b-phone">${b.phone}</div>
         </div>
         <div style="display:flex;gap:6px;">
@@ -2835,6 +2950,7 @@ function renderOwnerView(main){
       state.confirmDeleteId = b.id;
       render();
     };
+    if(cancelled){ const wa = card.querySelector("a.icon-btn"); if(wa) wa.remove(); }
     return card;
   };
 
@@ -2845,7 +2961,8 @@ function renderOwnerView(main){
   // --- Pannello in evidenza: prenotazioni di OGGI ---
   const todayLabel = document.createElement("div");
   todayLabel.className = "section-label";
-  todayLabel.textContent = `OGGI${todaysBookings.length ? ' ('+todaysBookings.length+')' : ''}`;
+  const todayActive = todaysBookings.filter(b => b.status !== "cancelled").length;
+  todayLabel.textContent = `OGGI${todayActive ? ' ('+todayActive+')' : ''}`;
   main.appendChild(todayLabel);
 
   const todayPanel = document.createElement("div");

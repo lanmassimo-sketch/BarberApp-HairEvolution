@@ -10,9 +10,11 @@ export async function onRequestPost({ request, env }) {
   const kv = env.HAIREVOLUTION_KV;
   const { id, phone } = await request.json().catch(() => ({}));
   const all = (await kv.get("bookings", { type: "json" })) || [];
-  const target = all.find((b) => b.id === id);
+  const target = all.find((b) => b.id === id && b.status !== "cancelled");
   if (!target || phoneKey(target.phone) !== phoneKey(phone)) return json({ error: "Prenotazione non trovata" }, 404);
   if (minutesUntil(target.date, target.time) < MIN_MINUTES) return json({ error: "Troppo tardi per disdire" }, 409);
-  await kv.put("bookings", JSON.stringify(all.filter((b) => b.id !== id)));
+  // La prenotazione non viene cancellata: resta visibile al titolare come disdetta e libera lo slot.
+  const updated = all.map((b) => b.id === id ? { ...b, status: "cancelled", cancelledAt: new Date().toISOString(), seenByOwner: false } : b);
+  await kv.put("bookings", JSON.stringify(updated));
   return json({ booking: { date: target.date, time: target.time, serviceId: target.serviceId, name: target.name } });
 }

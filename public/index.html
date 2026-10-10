@@ -945,7 +945,7 @@ const PRIVACY = {
   aggiornata: "01/10/2026"
 };
 
-const APP_VERSION = "2.3";
+const APP_VERSION = "2.4";
 const APP_VERSION_DATE = "03/10/2026";
 
 const APP_SUMMARY = [
@@ -963,6 +963,13 @@ const APP_SUMMARY = [
 ];
 
 const CHANGELOG = [
+  { version:"2.4", date:"03/10/2026",
+    summary:"Accesso Sviluppatore più facile da raggiungere: il piccolo simbolo 🛠 compare ora anche nella schermata del PIN Titolare (sotto il pulsante Entra), non solo nella schermata d'ingresso dei clienti. Prima, sui dispositivi che avevano già inserito il codice d'ingresso, il link non si vedeva più.",
+    changes:[
+    "Simbolo 🛠 sotto il PIN Titolare, che apre l'accesso Sviluppatore",
+    "Il blocco di accesso Sviluppatore è ora condiviso tra le due schermate",
+    "Nessun cambiamento alle funzioni server"
+  ]},
   { version:"2.3", date:"03/10/2026",
     summary:"Disdetta: se la ricerca per numero di telefono non dà risultati, l'app ora spiega il motivo invece di mostrare sempre \"nessuna prenotazione trovata\". Il limite di ricerche del server conta solo quelle senza risultato, così chi prova più volte (ad esempio durante i test) non viene bloccato per errore.",
     changes:[
@@ -3126,11 +3133,9 @@ function renderChangelogSheet(){
   return overlay;
 }
 
-function renderAppGateScreen(app){
+function renderDevGate(app){
   const wrap = document.createElement("div");
   wrap.className = "pin-screen";
-
-  if(state.devGateOpen){
     wrap.innerHTML = `
       <div class="lock">🛠️</div>
       <h3>Accesso Sviluppatore</h3>
@@ -3158,8 +3163,13 @@ function renderAppGateScreen(app){
     wrap.querySelector("#devGo").onclick = tryDevUnlock;
     wrap.querySelector("#devBack").onclick = () => { state.devGateOpen = false; state.devPinError = false; render(); };
     field.onkeydown = (e) => { if(e.key==="Enter") tryDevUnlock(); };
-    return;
-  }
+}
+
+function renderAppGateScreen(app){
+  const wrap = document.createElement("div");
+  wrap.className = "pin-screen";
+
+  if(state.devGateOpen){ renderDevGate(app); return; }
 
   wrap.innerHTML = `
     <div class="lock">🔒</div>
@@ -3190,6 +3200,7 @@ function renderAppGateScreen(app){
 }
 
 function renderPinScreen(main){
+  if(state.devGateOpen){ renderDevGate(main); return; }
   const wrap = document.createElement("div");
   wrap.className = "pin-screen";
   wrap.innerHTML = `
@@ -3201,6 +3212,7 @@ function renderPinScreen(main){
       <button class="btn-primary" id="pinGo">Entra</button>
     </div>
     <div class="pin-hint">${state.pinError ? (state.pinMsg || "PIN errato, riprova.") : ""}</div>
+    <button class="link-btn" id="devLinkOwner" style="opacity:.35;font-size:11px;">🛠</button>
   `;
   main.appendChild(wrap);
   const field = wrap.querySelector("#pinField");
@@ -3215,6 +3227,7 @@ function renderPinScreen(main){
     }
   };
   wrap.querySelector("#pinGo").onclick = tryUnlock;
+  wrap.querySelector("#devLinkOwner").onclick = () => { state.devGateOpen = true; render(); };
   field.onkeydown = (e) => { if(e.key==="Enter") tryUnlock(); };
 }
 

@@ -945,10 +945,11 @@ const PRIVACY = {
   aggiornata: "01/10/2026"
 };
 
-const APP_VERSION = "2.4";
-const APP_VERSION_DATE = "03/10/2026";
+const APP_VERSION = "2.5";
+const APP_VERSION_DATE = "11/10/2026";
 
 const APP_SUMMARY = [
+  { title:"Controlli e aggiornamento", text:"Il server controlla ogni prenotazione (data, orario, servizio, nome, telefono) e rifiuta quelle sovrapposte: se due clienti scelgono lo stesso orario, il secondo riceve un avviso e deve sceglierne un altro. Le modifiche del titolare agiscono sull'elenco aggiornato e non cancellano prenotazioni nuove. La dashboard del titolare si aggiorna da sola ogni minuto." },
   { title:"Disdette", text:"Se un cliente disdice, la prenotazione resta visibile al titolare con il nome barrato, il badge \"DISDETTA\" e la data e l'ora della disdetta. Lo slot torna libero subito. Le disdette non contano in statistiche, incasso e rubrica; il titolare può eliminarle con il cestino." },
   { title:"Promemoria", text:"L'app non invia messaggi automatici. Dopo la prenotazione il cliente può salvare l'appuntamento sul calendario del telefono (con avvisi 1 giorno e 1 ora prima). Il titolare, nella sezione \"Promemoria di domani\", vede gli appuntamenti del giorno dopo e può ricordarli con un tocco su WhatsApp (invio manuale)." },
   { title:"Accesso e sicurezza", text:"I PIN non sono nel codice: li controlla il server, che dopo il PIN giusto rilascia un accesso (clienti: senza scadenza, ricordato dal dispositivo; Titolare e Sviluppatore: PIN richiesto a ogni accesso). Dopo 10 tentativi sbagliati in 15 minuti l'accesso si blocca. I clienti vedono solo gli orari occupati, mai nomi o telefoni degli altri." },
@@ -963,6 +964,20 @@ const APP_SUMMARY = [
 ];
 
 const CHANGELOG = [
+  { version:"2.5", date:"11/10/2026",
+    summary:"Sicurezza e affidabilità, dopo il controllo completo della v2.4. (1) Nomi e telefoni dei clienti non possono più eseguire codice nell'app del titolare: tutti i dati sono protetti prima di essere mostrati e il server toglie i simboli < e >. (2) Le modifiche del titolare (segna come letta, elimina, azzera, cancella vecchie) agiscono sull'elenco aggiornato del server, così non cancellano più le prenotazioni arrivate nel frattempo. (3) Il server controlla data, orario, servizio, nome e telefono e rifiuta le prenotazioni sovrapposte; se due clienti scelgono lo stesso orario, il secondo riceve un avviso. (4) La dashboard del titolare si aggiorna da sola ogni minuto e quando si riapre l'app.",
+    changes:[
+    "Protezione del testo (escape HTML) in tutti i punti dove compaiono nomi e telefoni",
+    "Nuova funzione /api/bookingops: segna come viste, elimina, cancella vecchie, azzera, sempre sull'elenco aggiornato",
+    "Il salvataggio completo dell'elenco (PUT su /api/bookings) non è più accettato",
+    "Controlli del server: data (non passata, entro 60 giorni, non nei giorni di chiusura), orario nella griglia e dentro l'apertura, servizio esistente, nome 2-60 caratteri, telefono valido",
+    "Orario già occupato: risposta 409 e messaggio chiaro; nessun falso salvataggio \"solo su questo dispositivo\"",
+    "Salvataggio con verifica e nuovi tentativi se due richieste arrivano insieme",
+    "Aggiornamento automatico dell'elenco del titolare ogni minuto e al ritorno sull'app",
+    "Contatti manuali: stessi controlli su nome e telefono",
+    "Dopo un secondo giro di test: rifiutati servizi con nomi riservati e PIN non testuali; nessun falso \"orario occupato\" con richieste simultanee o doppio invio dello stesso cliente; ai clienti arrivano solo gli orari occupati da oggi in poi",
+    "Serve ricaricare lo zip intero (nuove funzioni bookingops.js e _lib/shop.js)"
+  ]},
   { version:"2.4", date:"03/10/2026",
     summary:"Accesso Sviluppatore più facile da raggiungere: il piccolo simbolo 🛠 compare ora anche nella schermata del PIN Titolare (sotto il pulsante Entra), non solo nella schermata d'ingresso dei clienti. Prima, sui dispositivi che avevano già inserito il codice d'ingresso, il link non si vedeva più.",
     changes:[
@@ -1402,6 +1417,7 @@ let state = {
   showCancelSheet: false,
   cancelResults: [],
   cancelError: "",
+  pushError: "",
   showPrivacy: false,
   formPrivacy: false,
   formMarketing: false,
@@ -1412,6 +1428,10 @@ let state = {
   cancelBusy: false,
   toast: null,
 };
+
+function esc(v){
+  return String(v == null ? "" : v).replace(/[&<>"']/g, c => ({ "&":"&amp;", "<":"&lt;", ">":"&gt;", '"':"&quot;", "'":"&#39;" }[c]));
+}
 
 function fmtEUR(n){ return "€" + n.toFixed(2).replace(".", ","); }
 
@@ -1623,39 +1643,45 @@ async function fetchBookings(){
 
 // Aggiunge una prenotazione al database condiviso. Ritorna true se riuscito.
 async function pushBooking(booking){
+  state.pushError = "";
   try {
     const res = await fetch(API_URL, {
       method: "POST",
       headers: apiHeaders({ "Content-Type": "application/json" }),
       body: JSON.stringify(booking),
     });
-    if(!res.ok) throw new Error("risposta non ok");
-    const data = await res.json();
-    state.bookings = data.bookings || [];
-    state.lastPushed = data.booking;
-    saveBookingsLocal();
-    return true;
+    const data = await res.json().catch(() => ({}));
+    if(res.ok){
+      state.bookings = data.bookings || [];
+      state.lastPushed = data.booking;
+      saveBookingsLocal();
+      return "ok";
+    }
+    state.pushError = data.error || "Prenotazione non riuscita, riprova.";
+    return res.status === 409 ? "conflict" : "error";
   } catch(e) {
-    console.warn("Impossibile salvare sul database condiviso, salvo solo in locale:", e);
-    state.lastPushed = { ...booking, id: "bk_"+Date.now(), seenByOwner:false, createdAt: new Date().toISOString() };
-    state.bookings.push(state.lastPushed);
-    saveBookingsLocal();
-    return false;
+    state.pushError = "Connessione assente: la prenotazione non è stata inviata. Riprova.";
+    return "offline";
   }
 }
 
 // Sovrascrive l'intera lista sul database condiviso (usato per "azzera tutto"
 // e per segnare le prenotazioni come viste dal titolare).
-async function syncBookings(){
-  saveBookingsLocal();
+// Operazioni del titolare: il server le applica all'elenco aggiornato (non sovrascrive prenotazioni nuove).
+async function bookingOp(body, quiet){
   try {
-    await fetch(API_URL, {
-      method: "PUT",
-      headers: apiHeaders({ "Content-Type": "application/json" }),
-      body: JSON.stringify({ bookings: state.bookings }),
-    });
+    const res = await fetch("/api/bookingops", { method: "POST", headers: apiHeaders({ "Content-Type": "application/json" }), body: JSON.stringify(body) });
+    if(!res.ok) throw new Error("risposta non ok");
+    state.bookings = (await res.json()).bookings || [];
+    saveBookingsLocal();
+    return true;
   } catch(e) {
-    console.warn("Impossibile sincronizzare col database condiviso:", e);
+    console.warn("Operazione non riuscita:", e);
+    if(!quiet){
+      flashToast("⚠️ Operazione non riuscita: controlla la connessione e riprova");
+      await refreshBookingsQuiet();
+    }
+    return false;
   }
 }
 
@@ -2169,11 +2195,11 @@ function renderBookingSheet(){
     <div class="sheet-sub">${svc.name} · ${formatDateLong(dObj)} ore ${state.selectedSlot}</div>
     <div class="field">
       <label>Nome e cognome</label>
-      <input id="fName" type="text" placeholder="Es. Luca Bianchi" value="${state.formName}" />
+      <input id="fName" type="text" placeholder="Es. Luca Bianchi" value="${esc(state.formName)}" />
     </div>
     <div class="field">
       <label>Numero di telefono</label>
-      <input id="fPhone" type="tel" placeholder="Es. 333 1234567" value="${state.formPhone}" />
+      <input id="fPhone" type="tel" placeholder="Es. 333 1234567" value="${esc(state.formPhone)}" />
     </div>
     <div class="privacy-note">
       I tuoi dati (nome e telefono) vengono usati solo per gestire questa prenotazione e per essere ricontattato dal negozio. Non vengono condivisi con terzi.
@@ -2225,8 +2251,14 @@ function renderBookingSheet(){
       serviceId: state.selectedService,
       name, phone, marketing: marketingOk,
     };
-    const ok = await pushBooking(bookingDraft);
-    const booking = state.lastPushed || state.bookings[state.bookings.length - 1];
+    const result = await pushBooking(bookingDraft);
+    if(result !== "ok"){
+      state.formName = name; state.formPhone = phone; state.formPrivacy = privacyOk; state.formMarketing = marketingOk;
+      if(result === "conflict"){ state.showForm = false; state.selectedSlot = null; await refreshBookingsQuiet(); }
+      flashToast(state.pushError || "Prenotazione non riuscita, riprova");
+      return;
+    }
+    const booking = state.lastPushed;
 
     state.lastBooking = booking;
     state.showForm = false;
@@ -2235,9 +2267,6 @@ function renderBookingSheet(){
     state.selectedSlot = null;
     state.selectedService = null;
     state.view = "cliente";
-    if(!ok){
-      flashToast("⚠️ Salvata solo su questo dispositivo (database non raggiungibile)");
-    }
     renderConfirmOverlay(booking);
   };
 
@@ -2263,7 +2292,7 @@ function renderConfirmOverlay(booking){
         <div><b>${svc.name}</b></div>
         <div>${formatDateLong(dObj)} ore <b>${booking.time}</b></div>
         <div>${fmtEUR(svc.price)} · ${svc.dur} min</div>
-        <div>${booking.name} · ${booking.phone}</div>
+        <div>${esc(booking.name)} · ${esc(booking.phone)}</div>
       </div>
       <div class="reminder-list">
         <div>✅ Prenotazione registrata</div>
@@ -2342,7 +2371,7 @@ function buildTomorrowPanel(){
       const msg = encodeURIComponent(`Ciao ${b.name.split(" ")[0]}! Ti ricordiamo il tuo appuntamento da HairEvolution domani ${formatDateLong(tm)} alle ${b.time}${svc ? " ("+svc.name+")" : ""}. Se non puoi venire, puoi disdire dall'app: ${SHOP.bookingLink}. A presto!`);
       const row = document.createElement("div");
       row.className = "tomorrow-row";
-      row.innerHTML = `<div><b>${b.time}</b> · ${b.name}<br><span style="color:var(--grey-light);font-size:12px;">${svc ? svc.name : ""}</span></div>
+      row.innerHTML = `<div><b>${b.time}</b> · ${esc(b.name)}<br><span style="color:var(--grey-light);font-size:12px;">${svc ? svc.name : ""}</span></div>
         ${reminded[b.id] ? '<div class="tomorrow-done">✓ Ricordato</div>' : `<a class="icon-btn" target="_blank" rel="noopener" href="https://wa.me/39${phoneKey(b.phone)}?text=${msg}">Ricorda</a>`}`;
       const link = row.querySelector("a.icon-btn");
       if(link) link.addEventListener("click", () => { markReminded(b.id); setTimeout(render, 400); });
@@ -2542,7 +2571,7 @@ function renderRubricaSection(){
     const inviteMsg = encodeURIComponent(`Ciao ${c.name}! Ti va di prenotare il tuo prossimo appuntamento da HairEvolution? Puoi farlo comodamente qui: ${SHOP.bookingLink}`);
     row.innerHTML = `
       <div>
-        <div class="contact-name">${c.name}</div>
+        <div class="contact-name">${esc(c.name)}</div>
         <div class="contact-sub">${subtitle}</div>
         ${invitedLine}
       </div>
@@ -2641,7 +2670,7 @@ function renderCancelSheet(){
   let listHtml = "";
   if(state.cancelSearched){
     if(state.cancelError){
-      listHtml = `<div class="sheet-sub" style="color:var(--oxblood);font-weight:600;">${state.cancelError}</div>`;
+      listHtml = `<div class="sheet-sub" style="color:var(--oxblood);font-weight:600;">${esc(state.cancelError)}</div>`;
     } else if(!found.length){
       listHtml = `<div class="sheet-sub">Nessuna prenotazione futura trovata con questo numero. Controlla che sia lo stesso usato per prenotare: le prenotazioni già passate o già disdette non compaiono.</div>`;
     } else {
@@ -2749,7 +2778,7 @@ function renderDeleteConfirmSheet(){
   const dObj = new Date(booking.date+"T00:00:00");
   sheet.innerHTML = `
     <h3>Cancellare questa prenotazione?</h3>
-    <div class="sheet-sub">${svc ? svc.name : ''} · ${formatDateLong(dObj)} ore ${booking.time}<br>${booking.name} · ${booking.phone}</div>
+    <div class="sheet-sub">${svc ? svc.name : ''} · ${formatDateLong(dObj)} ore ${booking.time}<br>${esc(booking.name)} · ${esc(booking.phone)}</div>
     <div class="sheet-actions">
       <button class="btn-secondary" id="cancelDeleteBtn">Annulla</button>
       <button class="btn-primary" id="confirmDeleteBtn" style="flex:1;background:var(--oxblood);">Sì, cancella</button>
@@ -2759,11 +2788,11 @@ function renderDeleteConfirmSheet(){
 
   sheet.querySelector("#cancelDeleteBtn").onclick = () => { state.confirmDeleteId = null; render(); };
   sheet.querySelector("#confirmDeleteBtn").onclick = async () => {
-    state.bookings = state.bookings.filter(x => x.id !== state.confirmDeleteId);
+    const delId = state.confirmDeleteId;
     state.confirmDeleteId = null;
-    await syncBookings();
+    const done = await bookingOp({ op:"delete", id: delId });
     render();
-    flashToast("Prenotazione cancellata");
+    if(done) flashToast("Prenotazione cancellata");
   };
 
   return overlay;
@@ -2788,11 +2817,10 @@ function renderDeleteAllConfirmSheet(){
 
   sheet.querySelector("#cancelDeleteAllBtn").onclick = () => { state.confirmDeleteAll = false; render(); };
   sheet.querySelector("#confirmDeleteAllBtn").onclick = async () => {
-    state.bookings = [];
     state.confirmDeleteAll = false;
-    await syncBookings();
+    const done = await bookingOp({ op:"clear" });
     render();
-    flashToast("Prenotazioni azzerate");
+    if(done) flashToast("Prenotazioni azzerate");
   };
 
   return overlay;
@@ -2822,11 +2850,10 @@ function renderDeleteOldConfirmSheet(){
 
   sheet.querySelector("#cancelDeleteOldBtn").onclick = () => { state.confirmDeleteOld = false; render(); };
   sheet.querySelector("#confirmDeleteOldBtn").onclick = async () => {
-    state.bookings = state.bookings.filter(b => b.date >= cutoffKey);
     state.confirmDeleteOld = false;
-    await syncBookings();
+    const done = await bookingOp({ op:"purge", before: cutoffKey });
     render();
-    flashToast("Prenotazioni vecchie cancellate");
+    if(done) flashToast("Prenotazioni vecchie cancellate");
   };
 
   return overlay;
@@ -2944,8 +2971,8 @@ function renderOwnerView(main){
       ${cancelled && b.cancelledAt ? `<div class="b-cancelled">Disdetta il ${formatCreatedAt(b.cancelledAt)}</div>` : ''}
       <div class="b-client">
         <div>
-          <div class="b-name">${cancelled ? "<s>" + b.name + "</s>" : b.name}</div>
-          <div class="b-phone">${b.phone}</div>
+          <div class="b-name">${cancelled ? "<s>" + esc(b.name) + "</s>" : esc(b.name)}</div>
+          <div class="b-phone">${esc(b.phone)}</div>
         </div>
         <div style="display:flex;gap:6px;">
           <a class="icon-btn" target="_blank" rel="noopener" href="${'https://wa.me/'+toWhatsappNumber(b.phone)+'?text='+encodeURIComponent('Ciao '+b.name+'! Ti confermiamo la prenotazione per '+svc.name+' il '+formatDateLong(dObj)+' alle '+b.time+' da HairEvolution. Ti aspettiamo!')}">WhatsApp</a>
@@ -3025,9 +3052,9 @@ function renderOwnerView(main){
 
   if(hadUnseen){
     setTimeout(()=>{
+      const ids = state.bookings.filter(b=>!b.seenByOwner).map(b=>b.id);
       state.bookings.forEach(b=>b.seenByOwner=true);
-      syncBookings();
-      render();
+      bookingOp({ op:"seen", ids }, true).then(() => render());
     }, 900);
   }
 
@@ -3240,6 +3267,20 @@ if(state.appUnlocked){
   }
   refreshAll(); // aggiorna con i dati reali dal database condiviso
 }
+
+// Aggiornamento automatico: ogni minuto per il titolare e al ritorno sull'app per tutti.
+function safeToRerender(){
+  const ae = document.activeElement;
+  return !document.querySelector(".sheet-overlay") && !state.showForm && !state.showCancelSheet && !state.showPrivacy &&
+    !(ae && /^(INPUT|TEXTAREA|SELECT)$/.test(ae.tagName));
+}
+async function autoRefresh(){
+  if(!state.appUnlocked || document.hidden) return;
+  await refreshBookingsQuiet();
+  if(safeToRerender()) render();
+}
+setInterval(() => { if(state.ownerUnlocked) autoRefresh(); }, 60000);
+document.addEventListener("visibilitychange", () => { if(!document.hidden) autoRefresh(); });
 </script>
 </body>
 </html>

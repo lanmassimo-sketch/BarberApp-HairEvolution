@@ -61,14 +61,20 @@ export async function onRequest(context){
 
     if(request.method === "POST"){
       const input = await request.json();
-      if(!input || !input.name || !input.phone){
+      if(!input || typeof input.name !== "string" || typeof input.phone !== "string"){
         return new Response(JSON.stringify({ error: "Nome e telefono richiesti" }), { status: 400, headers });
+      }
+      const cname = String((input && input.name) ?? "").replace(/[\u0000-\u001f\u007f<>]/g, "").replace(/\s+/g, " ").trim();
+      const cphone = String((input && input.phone) ?? "").trim();
+      const cdigits = cphone.replace(/\D/g, "");
+      if(cname.length < 2 || cname.length > 60 || !/^[0-9+()\-.\s]{6,25}$/.test(cphone) || cdigits.length < 6 || cdigits.length > 15){
+        return new Response(JSON.stringify({ error: "Nome e telefono richiesti (nome 2-60 caratteri, telefono valido)" }), { status: 400, headers });
       }
       const contacts = await readContacts(kv);
       const contact = {
         id: "ct_" + Date.now() + "_" + Math.random().toString(36).slice(2, 8),
-        name: input.name,
-        phone: input.phone,
+        name: cname,
+        phone: cphone,
         marketing: input.marketing === true, // il titolare attesta il consenso del cliente
       };
       contacts.push(contact);

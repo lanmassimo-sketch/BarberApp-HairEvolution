@@ -12,8 +12,8 @@ export async function onRequestPost({ request, env }) {
   // Titolare e Sviluppatore: il PIN va inserito a ogni accesso; il token vale al massimo 12 ore.
   const FOREVER = 10 * 365 * 86400;
   const rules = { client: [env.CLIENT_PIN, FOREVER], owner: [env.OWNER_PIN, 12 * 3600], dev: [env.DEV_PIN, 12 * 3600] };
-  const rule = rules[role];
-  if (!rule || !rule[0] || !pin || !safeEqual(pin, rule[0])) {
+  const rule = typeof role === "string" && Object.hasOwn(rules, role) ? rules[role] : null;
+  if (!rule || !rule[0] || typeof pin !== "string" || !pin || !safeEqual(pin, rule[0])) {
     await bump(kv, request, "auth", 900);
     return json({ error: "Codice errato" }, 401);
   }

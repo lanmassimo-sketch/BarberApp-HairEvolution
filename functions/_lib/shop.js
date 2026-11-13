@@ -1,6 +1,6 @@
 // Regole del negozio usate dal server per controllare le prenotazioni.
 // Devono restare uguali a quelle dell'app (listino, orari, giorni di chiusura).
-export const SERVICES = { t1: 30, t2: 15, t3: 35, t4: 40, t5: 45, t6: 60, b1: 15, b2: 20, b3: 30, r1: 5, r2: 5, r3: 20, r5: 45, r6: 60 };
+export const SERVICES = { t1: 30, t2: 15, t3: 35, t4: 40, t5: 45, t6: 60, b1: 15, b2: 20, b3: 30, b4: 30, b5: 30, r1: 5, r2: 5, r3: 20, r5: 45, r6: 60 };
 export const WINDOWS = [[9 * 60, 12 * 60 + 30], [15 * 60, 19 * 60]]; // [inizio, chiusura] in minuti
 export const GRACE_MIN = 30;           // un servizio può finire fino a 30 minuti dopo la chiusura
 export const CLOSED_WEEKDAYS = [0, 1]; // domenica e lunedì

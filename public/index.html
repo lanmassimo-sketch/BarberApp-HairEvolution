@@ -272,6 +272,7 @@
     font-style:italic;
     margin-top:2px;
   }
+  .service-item .s-old{color:var(--grey-light);font-weight:400;font-size:12px;margin-right:4px;}
   .service-item .s-price{
     font-family:'Fraunces',serif;
     font-weight:600;
@@ -945,8 +946,8 @@ const PRIVACY = {
   aggiornata: "01/10/2026"
 };
 
-const APP_VERSION = "2.5";
-const APP_VERSION_DATE = "11/10/2026";
+const APP_VERSION = "2.7";
+const APP_VERSION_DATE = "10/11/2026";
 
 const APP_SUMMARY = [
   { title:"Controlli e aggiornamento", text:"Il server controlla ogni prenotazione (data, orario, servizio, nome, telefono) e rifiuta quelle sovrapposte: se due clienti scelgono lo stesso orario, il secondo riceve un avviso e deve sceglierne un altro. Le modifiche del titolare agiscono sull'elenco aggiornato e non cancellano prenotazioni nuove. La dashboard del titolare si aggiorna da sola ogni minuto." },
@@ -964,6 +965,26 @@ const APP_SUMMARY = [
 ];
 
 const CHANGELOG = [
+  { version:"2.7", date:"10/11/2026",
+    summary:"Due nuovi servizi nella sezione Barba, entrambi da 30 minuti: Rasatura della testa eseguita con schiuma da barba + barba (12,00 euro) e Rasatura della testa eseguita con schiuma da barba + barba modellata (14,00 euro).",
+    changes:[
+    "Nuovo servizio: Rasatura della testa eseguita con schiuma da barba + barba, 30 min, 12,00",
+    "Nuovo servizio: Rasatura della testa eseguita con schiuma da barba + barba modellata, 30 min, 14,00",
+    "Aggiunti anche nel server (_lib/shop.js, durata 30 min), altrimenti le prenotazioni verrebbero rifiutate come servizio non valido",
+    "Serve ricaricare lo zip intero"
+  ]},
+  { version:"2.6", date:"10/11/2026",
+    summary:"Nuovo listino prezzi. Taglio + shampoo e Taglio + rasatura barba passano da 18,00 a 19,00 euro; Barba modellata sfumata da 8,00 a 9,00 euro. Taglio + shampoo + barba (listino 25,00) e Taglio + shampoo + barba modellata (listino 27,00) hanno ora un abbuono: il cliente paga rispettivamente 23,00 e 25,00 euro. Nell'elenco servizi il prezzo di listino compare barrato accanto a quello che si paga.",
+    changes:[
+    "Taglio + shampoo: da 18,00 a 19,00",
+    "Taglio + rasatura barba: da 18,00 a 19,00",
+    "Taglio + shampoo + barba: listino 25,00, con abbuono si paga 23,00 (prima 22,00)",
+    "Taglio + shampoo + barba modellata: listino 27,00, con abbuono si paga 25,00 (prima 25,00)",
+    "Barba modellata sfumata: da 8,00 a 9,00",
+    "Riepilogo, conferma, schede del Titolare e incasso usano il prezzo pagato (con abbuono)",
+    "Le prenotazioni già fatte mostrano il prezzo nuovo, perché il prezzo si legge dal listino",
+    "Nessuna modifica al server: durate, orari e chiusure restano invariati"
+  ]},
   { version:"2.5", date:"11/10/2026",
     summary:"Sicurezza e affidabilità, dopo il controllo completo della v2.4. (1) Nomi e telefoni dei clienti non possono più eseguire codice nell'app del titolare: tutti i dati sono protetti prima di essere mostrati e il server toglie i simboli < e >. (2) Le modifiche del titolare (segna come letta, elimina, azzera, cancella vecchie) agiscono sull'elenco aggiornato del server, così non cancellano più le prenotazioni arrivate nel frattempo. (3) Il server controlla data, orario, servizio, nome e telefono e rifiuta le prenotazioni sovrapposte; se due clienti scelgono lo stesso orario, il secondo riceve un avviso. (4) La dashboard del titolare si aggiorna da sola ogni minuto e quando si riapre l'app.",
     changes:[
@@ -1343,10 +1364,10 @@ const CATEGORIES = [
     services: [
       { id:"t1", name:"Taglio", price:13, dur:30 },
       { id:"t2", name:"Taglio rasato a macchinetta", price:9, dur:15 },
-      { id:"t3", name:"Taglio + shampoo", price:18, dur:35 },
-      { id:"t4", name:"Taglio + rasatura barba", price:18, dur:40 },
-      { id:"t5", name:"Taglio + shampoo + barba", price:22, dur:45 },
-      { id:"t6", name:"Taglio + shampoo + barba modellata", price:25, dur:60 },
+      { id:"t3", name:"Taglio + shampoo", price:19, dur:35 },
+      { id:"t4", name:"Taglio + rasatura barba", price:19, dur:40 },
+      { id:"t5", name:"Taglio + shampoo + barba", price:23, listPrice:25, dur:45 },
+      { id:"t6", name:"Taglio + shampoo + barba modellata", price:25, listPrice:27, dur:60 },
     ]
   },
   {
@@ -1354,7 +1375,9 @@ const CATEGORIES = [
     services: [
       { id:"b1", name:"Rasatura barba", price:6, dur:15 },
       { id:"b2", name:"Barba modellata classica", price:8, dur:20 },
-      { id:"b3", name:"Barba modellata sfumata", price:8, dur:30 },
+      { id:"b3", name:"Barba modellata sfumata", price:9, dur:30 },
+      { id:"b4", name:"Rasatura della testa eseguita con schiuma da barba + barba", price:12, dur:30 },
+      { id:"b5", name:"Rasatura della testa eseguita con schiuma da barba + barba modellata", price:14, dur:30 },
     ]
   },
   {
@@ -2044,9 +2067,9 @@ function renderClientView(main){
     item.innerHTML = `
       <div>
         <div class="s-name">${s.name}</div>
-        <div class="s-dur">${s.dur} min</div>
+        <div class="s-dur">${s.dur} min${s.listPrice ? " · con abbuono" : ""}</div>
       </div>
-      <div class="s-price">${fmtEUR(s.price)}</div>
+      <div class="s-price">${s.listPrice ? `<s class="s-old">${fmtEUR(s.listPrice)}</s> ` : ""}${fmtEUR(s.price)}</div>
     `;
     item.onclick = () => { state.selectedService = s.id; state.selectedSlot=null; render(); };
     list.appendChild(item);
